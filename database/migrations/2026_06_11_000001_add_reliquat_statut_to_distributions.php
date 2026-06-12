@@ -9,32 +9,40 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('distributions', function (Blueprint $table) {
-            $table->decimal('reliquat', 10, 2)->default(0)->after('montant_attendu');
-            $table->string('statut', 20)->default('en_attente')->after('reliquat');
-        });
+        if (!Schema::hasColumn('distributions', 'reliquat')) {
+            Schema::table('distributions', function (Blueprint $table) {
+                $table->decimal('reliquat', 10, 2)->default(0);
+            });
+        }
 
-        // ── Initialiser les données existantes ────────────────────────────────
+        if (!Schema::hasColumn('distributions', 'statut')) {
+            Schema::table('distributions', function (Blueprint $table) {
+                $table->string('statut', 20)->default('en_attente');
+            });
+        }
 
-        // Distributions avec versement → reliquat réel
+        // Distributions avec versement : reliquat = montant_attendu - total versé (min 0)
         DB::statement("
-            UPDATE distributions d
-            JOIN versements v ON v.distribution_id = d.id
-            SET d.reliquat = GREATEST(0, COALESCE(d.montant_attendu, 0) - v.montant_verse),
-                d.statut   = CASE
-                                 WHEN COALESCE(d.montant_attendu, 0) <= v.montant_verse
-                                 THEN 'reglee'
-                                 ELSE 'en_attente'
-                             END
+            UPDATE distributions
+            SET reliquat = CASE
+                    WHEN (COALESCE(montant_attendu, 0) - (SELECT COALESCE(SUM(v.montant_verse), 0) FROM versements v WHERE v.distribution_id = distributions.id)) < 0
+                    THEN 0
+                    ELSE (COALESCE(montant_attendu, 0) - (SELECT COALESCE(SUM(v.montant_verse), 0) FROM versements v WHERE v.distribution_id = distributions.id))
+                END,
+                statut = CASE
+                    WHEN COALESCE(montant_attendu, 0) <= (SELECT COALESCE(SUM(v.montant_verse), 0) FROM versements v WHERE v.distribution_id = distributions.id)
+                    THEN 'reglee'
+                    ELSE 'en_attente'
+                END
+            WHERE EXISTS (SELECT 1 FROM versements v WHERE v.distribution_id = distributions.id)
         ");
 
-        // Distributions sans versement → reliquat = montant_attendu, statut = en_attente
+        // Distributions sans versement : reliquat = montant_attendu, statut = en_attente
         DB::statement("
-            UPDATE distributions d
-            LEFT JOIN versements v ON v.distribution_id = d.id
-            SET d.reliquat = COALESCE(d.montant_attendu, 0),
-                d.statut   = 'en_attente'
-            WHERE v.id IS NULL
+            UPDATE distributions
+            SET reliquat = COALESCE(montant_attendu, 0),
+                statut   = 'en_attente'
+            WHERE NOT EXISTS (SELECT 1 FROM versements v WHERE v.distribution_id = distributions.id)
         ");
     }
 

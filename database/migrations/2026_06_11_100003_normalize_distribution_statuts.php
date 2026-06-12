@@ -7,21 +7,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Nouvelle règle : statut = 'reglee' dès qu'un versement existe, peu importe le reliquat.
-
-        // 1. Toute distribution liée à un versement → 'reglee'
+        // Toute distribution liée à un versement → 'reglee'
         DB::statement("
-            UPDATE distributions d
-            JOIN versements v ON v.distribution_id = d.id
-            SET d.statut = 'reglee'
+            UPDATE distributions
+            SET statut = 'reglee'
+            WHERE EXISTS (SELECT 1 FROM versements v WHERE v.distribution_id = distributions.id)
         ");
 
-        // 2. Toute distribution sans versement → 'en_attente'
+        // Toute distribution sans versement → 'en_attente'
         DB::statement("
-            UPDATE distributions d
-            LEFT JOIN versements v ON v.distribution_id = d.id
-            SET d.statut = 'en_attente'
-            WHERE v.id IS NULL
+            UPDATE distributions
+            SET statut = 'en_attente'
+            WHERE NOT EXISTS (SELECT 1 FROM versements v WHERE v.distribution_id = distributions.id)
         ");
     }
 

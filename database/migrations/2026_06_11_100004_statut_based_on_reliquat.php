@@ -21,15 +21,14 @@ return new class extends Migration
     {
         // Retour à la règle versement-based (tâche précédente)
         DB::statement("
-            UPDATE distributions d
-            JOIN versements v ON v.distribution_id = d.id
-            SET d.statut = 'reglee'
+            UPDATE distributions
+            SET statut = 'reglee'
+            WHERE EXISTS (SELECT 1 FROM versements v WHERE v.distribution_id = distributions.id)
         ");
         DB::statement("
-            UPDATE distributions d
-            LEFT JOIN versements v ON v.distribution_id = d.id
-            SET d.statut = 'en_attente'
-            WHERE v.id IS NULL
+            UPDATE distributions
+            SET statut = 'en_attente'
+            WHERE NOT EXISTS (SELECT 1 FROM versements v WHERE v.distribution_id = distributions.id)
         ");
     }
 };
