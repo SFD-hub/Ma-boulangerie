@@ -16,9 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('role_id')->nullable();
         });
 
-        DB::table('users')
-            ->join('roles', 'roles.nom', '=', 'users.role')
-            ->update(['users.role_id' => DB::raw('roles.id')]);
+        DB::statement('UPDATE users SET role_id = (SELECT id FROM roles WHERE roles.nom = users.role)');
 
         Schema::table('users', function (Blueprint $table) {
             $table->foreign('role_id')->references('id')->on('roles')->restrictOnDelete();
@@ -35,9 +33,7 @@ return new class extends Migration
             $table->string('role')->nullable();
         });
 
-        DB::table('users')
-            ->leftJoin('roles', 'roles.id', '=', 'users.role_id')
-            ->update(['users.role' => DB::raw('roles.nom')]);
+        DB::statement('UPDATE users SET role = (SELECT nom FROM roles WHERE roles.id = users.role_id)');
 
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['role_id']);
