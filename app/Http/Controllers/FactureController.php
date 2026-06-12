@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Facture;
+use App\Models\ClientAbonne;
+use App\Models\ConsommationAbonne;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
+
+class FactureController extends Controller
+{
+    public function show(Facture $facture): View
+    {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+
+        return view('factures.show', compact('facture'));
+    }
+
+    public function edit(Facture $facture): View
+    {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+
+        return view('factures.edit', compact('facture'));
+    }
+
+    public function update(Request $request, Facture $facture): RedirectResponse
+    {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+
+        $validated = $request->validate([
+            'mois'            => 'required|integer|min:1|max:12',
+            'annee'           => 'required|integer|min:2020',
+            'prix_unitaire'   => 'required|integer|min:1',
+            'quantite_totale' => 'required|integer|min:1',
+            'montant_total'   => 'required|numeric|min:0.01',
+            'statut'          => 'required|string|in:impayee,payee',
+        ], [
+            'mois.required'          => 'Le mois est obligatoire.',
+            'annee.required'         => 'L\'année est obligatoire.',
+            'prix_unitaire.required' => 'Le prix unitaire est obligatoire.',
+            'statut.in'              => 'Le statut doit être Impayée ou Payée.',
+        ]);
+
+        $facture->update($validated);
+
+        return redirect()->route('clients-abonnes.factures.historique', $facture->clientAbonne)
+            ->with('success', 'Facture mise à jour.');
+    }
+
+    public function destroy(Facture $facture): RedirectResponse
+    {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+
+        $clientAbonne = $facture->clientAbonne;
+        $facture->delete();
+
+        return redirect()->route('clients-abonnes.factures.historique', $clientAbonne)
+            ->with('success', 'Facture supprimée.');
+    }
+
+    // ─── Marquer une facture comme payée ───────────────────────────────────
+
+    public function payer(Facture $facture): RedirectResponse
+    {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+
+        if ($facture->statut === 'payee') {
+            return redirect()->back()->with('error', 'Cette facture est déjà payée.');
+        }
+
+        $facture->update([
+            'statut'        => 'payee',
+            'date_paiement' => now()->toDateString(),
+        ]);
+
+        return redirect()->back()
+            ->with('success', 'Facture marquée comme payée.');
+    }
+
+    // ─── Vue impression / PDF ──────────────────────────────────────────────
+
+    public function imprimer(Facture $facture): View
+    {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+
+        $facture->load('clientAbonne');
+        $boulangerie = auth()->user()->boulangerie;
+
+        return view('factures.imprimer', compact('facture', 'boulangerie'));
+    }
+}
