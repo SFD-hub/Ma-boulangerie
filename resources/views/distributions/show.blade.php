@@ -10,7 +10,7 @@
                 style="padding: 10px 16px; background: #0f766e; color: white; border-radius: 6px; text-decoration: none; font-weight: 700;">
                 Éditer
             </a>
-            <a href="{{ route('distributions.index') }}"
+            <a href="{{ route('livreurs.distributions', $distribution->livreur) }}"
                 style="padding: 10px 16px; background: #f0f0f0; color: #172033; border: 1px solid #d9dee7; border-radius: 6px; text-decoration: none; font-weight: 700;">
                 Retour
             </a>

@@ -119,7 +119,7 @@
             style="padding: 10px 16px; background: #0f766e; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;">
             {{ isset($distribution) ? 'Mettre à jour' : 'Créer' }}
         </button>
-        <a href="{{ isset($distribution) ? route('distributions.show', $distribution) : route('distributions.index') }}"
+        <a href="{{ isset($distribution) ? route('distributions.show', $distribution) : route('livreurs.index') }}"
             style="padding: 10px 16px; background: #f0f0f0; color: #172033; border: 1px solid #d9dee7; border-radius: 6px; text-decoration: none; font-weight: 700;">
             Annuler
         </a>
