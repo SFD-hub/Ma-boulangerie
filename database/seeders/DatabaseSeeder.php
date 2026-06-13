@@ -7,6 +7,7 @@ use App\Models\MatierePremiere;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -24,7 +25,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Stock initial (en sacs pour la farine, en paquets pour la levure)
         MatierePremiere::firstOrCreate(
             ['boulangerie_id' => $boulangerie->id, 'nom' => 'Farine'],
             ['stock_actuel' => 12, 'seuil_alerte' => 3]
@@ -35,13 +35,16 @@ class DatabaseSeeder extends Seeder
             ['stock_actuel' => 4, 'seuil_alerte' => 1]
         );
 
-        User::factory()->create([
-            'name'           => 'Propriétaire Test',
-            'email'          => 'test@example.com',
-            'telephone'      => '77 000 00 00',
-            'role_id'        => $proprietaire->id,
-            'boulangerie_id' => $boulangerie->id,
-            'actif'          => true,
-        ]);
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name'           => 'Propriétaire Test',
+                'password'       => Hash::make('password'),
+                'telephone'      => '77 000 00 00',
+                'role_id'        => $proprietaire->id,
+                'boulangerie_id' => $boulangerie->id,
+                'actif'          => true,
+            ]
+        );
     }
 }
