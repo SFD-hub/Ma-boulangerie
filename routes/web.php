@@ -17,7 +17,6 @@ use App\Http\Controllers\GerantController;
 use App\Http\Controllers\LivreurController;
 use App\Http\Controllers\StatistiqueController;
 use App\Http\Controllers\MatierePremiereController;
-use App\Http\Controllers\PageController;
 use App\Http\Controllers\PaiementFactureController;
 use App\Http\Controllers\ParametreController;
 use App\Http\Controllers\ProductionController;
@@ -25,8 +24,8 @@ use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\VersementController;
 use App\Http\Controllers\VenteController;
 
-// ── Page publique ────────────────────────────────────────────────────────────
-Route::get('/', [PageController::class, 'home']);
+// ── Page d'accueil → redirection vers la connexion ───────────────────────────
+Route::get('/', fn () => redirect()->route('login'));
 
 // ── Authentification ─────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
