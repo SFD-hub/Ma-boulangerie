@@ -32,10 +32,11 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label">Description (optionnelle)</label>
+                <label class="form-label">Motif de la dépense *</label>
                 <input class="form-input" type="text" name="libelle"
                        value="{{ old('libelle') }}"
-                       placeholder="Ex : Salaire Moussa — juin 2026">
+                       placeholder="Ex : Salaire Moussa — juin 2026"
+                       required minlength="3">
             </div>
 
             <div class="form-group">

@@ -92,11 +92,13 @@ class DepenseController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'libelle'     => 'nullable|string|max:255',
+            'libelle'     => 'required|string|min:3|max:255',
             'categorie'   => 'required|string|in:' . implode(',', array_keys(self::CATEGORIES_MANUELLES)),
             'montant'     => 'required|numeric|min:0.01',
             'date_depense'=> 'required|date|before_or_equal:today',
         ], [
+            'libelle.required'      => 'Le motif de la dépense est obligatoire.',
+            'libelle.min'           => 'Le motif doit contenir au moins 3 caractères.',
             'categorie.required'    => 'La catégorie est obligatoire.',
             'categorie.in'          => 'Catégorie invalide.',
             'montant.required'      => 'Le montant est obligatoire.',
@@ -146,11 +148,13 @@ class DepenseController extends Controller
         }
 
         $validated = $request->validate([
-            'libelle'      => 'nullable|string|max:255',
+            'libelle'      => 'required|string|min:3|max:255',
             'categorie'    => 'required|string|in:' . implode(',', array_keys(self::CATEGORIES_MANUELLES)),
             'montant'      => 'required|numeric|min:0.01',
             'date_depense' => 'required|date|before_or_equal:today',
         ], [
+            'libelle.required'             => 'Le motif de la dépense est obligatoire.',
+            'libelle.min'                  => 'Le motif doit contenir au moins 3 caractères.',
             'categorie.in'                 => 'Catégorie invalide.',
             'montant.min'                  => 'Le montant doit être supérieur à 0.',
             'date_depense.before_or_equal' => 'La date ne peut pas être dans le futur.',
