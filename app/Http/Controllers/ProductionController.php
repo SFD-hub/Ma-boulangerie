@@ -2,127 +2,132 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Production;
 use App\Models\MatierePremiere;
+use App\Models\Produit;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class ProductionController extends Controller
 {
     public function index(): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        
-        $productions = Production::where('boulangerie_id', $boulangerie_id)
-            ->orderBy('date_production', 'desc')
-            ->get();
 
-        $today = Carbon::today();
-        $productionDuJour = Production::where('boulangerie_id', $boulangerie_id)
-            ->whereDate('date_production', $today)
-            ->first();
+        // Cette page n'affiche jamais plus de 5 productions (la dernière +
+        // un aperçu de 4) : inutile de charger tout l'historique en mémoire.
+        $productions = Production::where('boulangerie_id', $boulangerie_id)
+            ->with('produit')
+            ->orderBy('date_production', 'desc')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
 
         $totalPains = Production::where('boulangerie_id', $boulangerie_id)
             ->sum('nombre_pains_produits');
 
-        return view('productions.index', compact('productions', 'productionDuJour', 'totalPains'));
+        return view('productions.index', compact('productions', 'totalPains'));
     }
 
     public function historique(): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
 
+        $totalPains = (int) Production::where('boulangerie_id', $boulangerie_id)->sum('nombre_pains_produits');
+
         $productions = Production::where('boulangerie_id', $boulangerie_id)
+            ->with('produit')
             ->orderBy('date_production', 'desc')
             ->orderByDesc('id')
-            ->get();
-
-        $totalPains = $productions->sum('nombre_pains_produits');
+            ->paginate(20)
+            ->withQueryString();
 
         return view('productions.historique', compact('productions', 'totalPains'));
     }
 
     public function create(): View
     {
-        return view('productions.create');
+        $boulangerie_id = auth()->user()->boulangerie_id;
+
+        $produits = Produit::where('boulangerie_id', $boulangerie_id)
+            ->where('actif', true)
+            ->orderBy('nom')
+            ->get();
+
+        $defaultProduitId = Produit::defaultIdPour($boulangerie_id);
+
+        return view('productions.create', compact('produits', 'defaultProduitId'));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+
         $validated = $request->validate([
+            'produit_id' => ['required', Rule::exists('produits', 'id')->where('boulangerie_id', $boulangerie_id)],
             'date_production' => 'required|date|before_or_equal:today',
-            'nombre_sacs' => 'required|integer|min:1',
-            'nombre_paquets_levure' => 'required|integer|min:1',
+            'nombre_sacs' => 'required|numeric|min:0.5|max:999999.99',
+            'nombre_paquets_levure' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_pains_produits' => 'required|integer|min:1',
         ], [
+            'produit_id.required' => 'Le produit est obligatoire.',
             'date_production.required' => 'La date de production est obligatoire.',
             'date_production.date' => 'La date doit être une date valide.',
             'date_production.before_or_equal' => 'La date ne peut pas être dans le futur.',
             'nombre_sacs.required' => 'Le nombre de sacs est obligatoire.',
-            'nombre_sacs.integer' => 'Le nombre de sacs doit être un nombre entier.',
-            'nombre_sacs.min' => 'Le nombre de sacs doit être au moins 1.',
+            'nombre_sacs.numeric' => 'Le nombre de sacs doit être un nombre (les demi-sacs sont acceptés, ex: 5.5).',
+            'nombre_sacs.min' => 'Le nombre de sacs doit être au moins 0,5.',
+            'nombre_sacs.max' => 'Le nombre de sacs est trop élevé.',
             'nombre_paquets_levure.required' => 'Le nombre de paquets de levure est obligatoire.',
-            'nombre_paquets_levure.integer' => 'Le nombre de paquets de levure doit être un nombre entier.',
-            'nombre_paquets_levure.min' => 'Le nombre de paquets de levure doit être au moins 1.',
+            'nombre_paquets_levure.numeric' => 'Le nombre de paquets de levure doit être un nombre (les demi-paquets sont acceptés).',
+            'nombre_paquets_levure.min' => 'Le nombre de paquets de levure doit être au moins 0,5.',
+            'nombre_paquets_levure.max' => 'Le nombre de paquets de levure est trop élevé.',
             'nombre_pains_produits.required' => 'Le nombre de pains produits est obligatoire.',
             'nombre_pains_produits.integer' => 'Le nombre de pains doit être un nombre entier.',
             'nombre_pains_produits.min' => 'Le nombre de pains doit être au moins 1.',
         ]);
 
-        $boulangerie_id = auth()->user()->boulangerie_id;
-
-        Log::info('[Production.store] Début', ['boulangerie_id' => $boulangerie_id, 'data' => $validated]);
-
         $quantite_farine_necessaire = $validated['nombre_sacs'];
         $quantite_levure_necessaire = $validated['nombre_paquets_levure'];
 
-        $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)
-            ->where('nom', 'Farine')
-            ->first();
+        $resultat = DB::transaction(function () use ($validated, $boulangerie_id, $quantite_farine_necessaire, $quantite_levure_necessaire) {
+            // Verrouille les deux lignes de stock avant de vérifier la
+            // suffisance : évite que deux productions saisies au même
+            // instant ne lisent le même stock et ne s'écrasent l'une
+            // l'autre à l'enregistrement.
+            $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)
+                ->where('nom', 'Farine')
+                ->lockForUpdate()
+                ->first();
 
-        $levure = MatierePremiere::where('boulangerie_id', $boulangerie_id)
-            ->where('nom', 'Levure')
-            ->first();
+            $levure = MatierePremiere::where('boulangerie_id', $boulangerie_id)
+                ->where('nom', 'Levure')
+                ->lockForUpdate()
+                ->first();
 
-        Log::info('[Production.store] Matières', [
-            'farine_trouvee' => $farine ? 'OUI (stock=' . $farine->stock_actuel . ')' : 'NON',
-            'levure_trouvee' => $levure ? 'OUI (stock=' . $levure->stock_actuel . ')' : 'NON',
-            'farine_necessaire' => $quantite_farine_necessaire,
-            'levure_necessaire' => $quantite_levure_necessaire,
-        ]);
+            if (!$farine) {
+                return ['ok' => false, 'message' => 'Matière première "Farine" introuvable. Vérifiez les matières premières.'];
+            }
 
-        if (!$farine) {
-            Log::warning('[Production.store] ÉCHEC: matière "Farine" introuvable pour boulangerie_id=' . $boulangerie_id);
-            return redirect()->back()
-                ->with('error', 'Matière première "Farine" introuvable. Vérifiez les matières premières.');
-        }
+            if ($farine->stock_actuel < $quantite_farine_necessaire) {
+                return ['ok' => false, 'message' => 'Stock de farine insuffisant (disponible : ' . $farine->stock_actuel . ' sacs, nécessaire : ' . $quantite_farine_necessaire . ' sacs).'];
+            }
 
-        if ($farine->stock_actuel < $quantite_farine_necessaire) {
-            Log::warning('[Production.store] ÉCHEC: stock farine insuffisant', ['stock' => $farine->stock_actuel, 'besoin' => $quantite_farine_necessaire]);
-            return redirect()->back()
-                ->with('error', 'Stock de farine insuffisant (disponible : ' . $farine->stock_actuel . ' sacs, nécessaire : ' . $quantite_farine_necessaire . ' sacs).');
-        }
+            if (!$levure) {
+                return ['ok' => false, 'message' => 'Matière première "Levure" introuvable. Vérifiez les matières premières.'];
+            }
 
-        if (!$levure) {
-            Log::warning('[Production.store] ÉCHEC: matière "Levure" introuvable pour boulangerie_id=' . $boulangerie_id);
-            return redirect()->back()
-                ->with('error', 'Matière première "Levure" introuvable. Vérifiez les matières premières.');
-        }
+            if ($levure->stock_actuel < $quantite_levure_necessaire) {
+                return ['ok' => false, 'message' => 'Stock de levure insuffisant (disponible : ' . $levure->stock_actuel . ' paquets, nécessaire : ' . $quantite_levure_necessaire . ' paquets).'];
+            }
 
-        if ($levure->stock_actuel < $quantite_levure_necessaire) {
-            Log::warning('[Production.store] ÉCHEC: stock levure insuffisant', ['stock' => $levure->stock_actuel, 'besoin' => $quantite_levure_necessaire]);
-            return redirect()->back()
-                ->with('error', 'Stock de levure insuffisant (disponible : ' . $levure->stock_actuel . ' paquets, nécessaire : ' . $quantite_levure_necessaire . ' paquets).');
-        }
-
-        Log::info('[Production.store] Stocks OK — démarrage transaction');
-
-        DB::transaction(function () use ($validated, $boulangerie_id, $farine, $levure, $quantite_farine_necessaire, $quantite_levure_necessaire) {
             Production::create([
+                'produit_id' => $validated['produit_id'],
                 'date_production' => $validated['date_production'],
                 'nombre_sacs' => $validated['nombre_sacs'],
                 'quantite_farine' => $quantite_farine_necessaire,
@@ -137,8 +142,21 @@ class ProductionController extends Controller
             $levure->stock_actuel -= $quantite_levure_necessaire;
             $levure->save();
 
-            Log::info('[Production.store] Transaction terminée avec succès');
+            ActivityLog::record(
+                'production_enregistree',
+                auth()->user()->name . ' a enregistré une production de ' . number_format($validated['nombre_pains_produits'], 0, ',', ' ') . ' pains',
+                $boulangerie_id,
+                'production'
+            );
+
+            return ['ok' => true];
         });
+
+        if (!$resultat['ok']) {
+            Log::warning('[Production.store] Échec', ['boulangerie_id' => $boulangerie_id, 'raison' => $resultat['message']]);
+
+            return redirect()->back()->with('error', $resultat['message']);
+        }
 
         return redirect()->route('productions.index')
             ->with('success', 'Production créée avec succès.');
@@ -146,43 +164,52 @@ class ProductionController extends Controller
 
     public function show(Production $production): View
     {
+        abort_if($production->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
         return view('productions.show', compact('production'));
     }
 
     public function edit(Production $production): View
     {
-        return view('productions.edit', compact('production'));
+        abort_if($production->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
+        $produits = Produit::where('boulangerie_id', $production->boulangerie_id)
+            ->where('actif', true)
+            ->orderBy('nom')
+            ->get();
+
+        return view('productions.edit', compact('production', 'produits'));
     }
 
     public function update(Request $request, Production $production): RedirectResponse
     {
+        abort_if($production->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
         $validated = $request->validate([
+            'produit_id' => ['required', Rule::exists('produits', 'id')->where('boulangerie_id', $production->boulangerie_id)],
             'date_production' => 'required|date|before_or_equal:today',
-            'nombre_sacs' => 'required|integer|min:1',
-            'nombre_paquets_levure' => 'required|integer|min:1',
+            'nombre_sacs' => 'required|numeric|min:0.5|max:999999.99',
+            'nombre_paquets_levure' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_pains_produits' => 'required|integer|min:1',
         ], [
+            'produit_id.required' => 'Le produit est obligatoire.',
             'date_production.required' => 'La date de production est obligatoire.',
             'date_production.date' => 'La date doit être une date valide.',
             'date_production.before_or_equal' => 'La date ne peut pas être dans le futur.',
             'nombre_sacs.required' => 'Le nombre de sacs est obligatoire.',
-            'nombre_sacs.integer' => 'Le nombre de sacs doit être un nombre entier.',
-            'nombre_sacs.min' => 'Le nombre de sacs doit être au moins 1.',
+            'nombre_sacs.numeric' => 'Le nombre de sacs doit être un nombre (les demi-sacs sont acceptés, ex: 5.5).',
+            'nombre_sacs.min' => 'Le nombre de sacs doit être au moins 0,5.',
+            'nombre_sacs.max' => 'Le nombre de sacs est trop élevé.',
             'nombre_paquets_levure.required' => 'Le nombre de paquets de levure est obligatoire.',
-            'nombre_paquets_levure.integer' => 'Le nombre de paquets de levure doit être un nombre entier.',
-            'nombre_paquets_levure.min' => 'Le nombre de paquets de levure doit être au moins 1.',
+            'nombre_paquets_levure.numeric' => 'Le nombre de paquets de levure doit être un nombre (les demi-paquets sont acceptés).',
+            'nombre_paquets_levure.min' => 'Le nombre de paquets de levure doit être au moins 0,5.',
+            'nombre_paquets_levure.max' => 'Le nombre de paquets de levure est trop élevé.',
             'nombre_pains_produits.required' => 'Le nombre de pains produits est obligatoire.',
             'nombre_pains_produits.integer' => 'Le nombre de pains doit être un nombre entier.',
             'nombre_pains_produits.min' => 'Le nombre de pains doit être au moins 1.',
         ]);
 
         $boulangerie_id = auth()->user()->boulangerie_id;
-        $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)
-            ->where('nom', 'Farine')
-            ->first();
-        $levure = MatierePremiere::where('boulangerie_id', $boulangerie_id)
-            ->where('nom', 'Levure')
-            ->first();
 
         $quantite_farine_necessaire = $validated['nombre_sacs'];
         $quantite_levure_necessaire = $validated['nombre_paquets_levure'];
@@ -191,18 +218,26 @@ class ProductionController extends Controller
         $diffFarine = $quantite_farine_necessaire - $production->quantite_farine;
         $diffLevure = $quantite_levure_necessaire - $production->quantite_levure;
 
-        if ($farine->stock_actuel + $diffFarine < 0) {
-            return redirect()->back()
-                ->with('error', 'Stock de farine insuffisant pour cette mise à jour.');
-        }
+        $resultat = DB::transaction(function () use ($validated, $production, $boulangerie_id, $diffFarine, $diffLevure, $quantite_farine_necessaire, $quantite_levure_necessaire) {
+            $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)
+                ->where('nom', 'Farine')
+                ->lockForUpdate()
+                ->first();
+            $levure = MatierePremiere::where('boulangerie_id', $boulangerie_id)
+                ->where('nom', 'Levure')
+                ->lockForUpdate()
+                ->first();
 
-        if ($levure->stock_actuel + $diffLevure < 0) {
-            return redirect()->back()
-                ->with('error', 'Stock de levure insuffisant pour cette mise à jour.');
-        }
+            if ($farine->stock_actuel + $diffFarine < 0) {
+                return ['ok' => false, 'message' => 'Stock de farine insuffisant pour cette mise à jour.'];
+            }
 
-        DB::transaction(function () use ($validated, $production, $farine, $levure, $diffFarine, $diffLevure, $quantite_farine_necessaire, $quantite_levure_necessaire) {
+            if ($levure->stock_actuel + $diffLevure < 0) {
+                return ['ok' => false, 'message' => 'Stock de levure insuffisant pour cette mise à jour.'];
+            }
+
             $production->update([
+                'produit_id' => $validated['produit_id'],
                 'date_production' => $validated['date_production'],
                 'nombre_sacs' => $validated['nombre_sacs'],
                 'quantite_farine' => $quantite_farine_necessaire,
@@ -215,19 +250,27 @@ class ProductionController extends Controller
 
             $levure->stock_actuel -= $diffLevure;
             $levure->save();
+
+            return ['ok' => true];
         });
 
-        return redirect()->route('productions.show', $production)
+        if (!$resultat['ok']) {
+            return redirect()->back()->with('error', $resultat['message']);
+        }
+
+        return redirect()->route('productions.index')
             ->with('success', 'Production mise à jour avec succès.');
     }
 
     public function destroy(Production $production): RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)->where('nom', 'Farine')->first();
-        $levure = MatierePremiere::where('boulangerie_id', $boulangerie_id)->where('nom', 'Levure')->first();
+        abort_if($production->boulangerie_id !== $boulangerie_id, 403);
 
-        DB::transaction(function () use ($production, $farine, $levure) {
+        DB::transaction(function () use ($production, $boulangerie_id) {
+            $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)->where('nom', 'Farine')->lockForUpdate()->first();
+            $levure = MatierePremiere::where('boulangerie_id', $boulangerie_id)->where('nom', 'Levure')->lockForUpdate()->first();
+
             if ($farine) {
                 $farine->stock_actuel += $production->quantite_farine;
                 $farine->save();

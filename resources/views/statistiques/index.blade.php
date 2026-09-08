@@ -280,7 +280,7 @@
         if ($farineFaible) {
             $alertes[] = [
                 'icone'   => '🌾',
-                'message' => 'Stock farine faible : ' . ($farine->stock_actuel ?? 0) . ' sac' . (($farine->stock_actuel ?? 0) > 1 ? 's' : '') . ' restant' . (($farine->stock_actuel ?? 0) > 1 ? 's' : ''),
+                'message' => 'Stock farine faible : ' . \App\Support\Nombre::qte($farine->stock_actuel ?? 0) . ' sac' . (($farine->stock_actuel ?? 0) > 1 ? 's' : '') . ' restant' . (($farine->stock_actuel ?? 0) > 1 ? 's' : ''),
                 'couleur' => '#EF4444',
                 'bg'      => '#FEF2F2',
                 'border'  => '#FCA5A5',
@@ -289,7 +289,7 @@
         if ($levureFaible) {
             $alertes[] = [
                 'icone'   => '🧪',
-                'message' => 'Stock levure faible : ' . ($levure->stock_actuel ?? 0) . ' paquet' . (($levure->stock_actuel ?? 0) > 1 ? 's' : '') . ' restant' . (($levure->stock_actuel ?? 0) > 1 ? 's' : ''),
+                'message' => 'Stock levure faible : ' . \App\Support\Nombre::qte($levure->stock_actuel ?? 0) . ' paquet' . (($levure->stock_actuel ?? 0) > 1 ? 's' : '') . ' restant' . (($levure->stock_actuel ?? 0) > 1 ? 's' : ''),
                 'couleur' => '#EF4444',
                 'bg'      => '#FEF2F2',
                 'border'  => '#FCA5A5',

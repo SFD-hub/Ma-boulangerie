@@ -6,10 +6,12 @@
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h1>Distribution du {{ $distribution->date_distribution->format('d/m/Y') }}</h1>
         <div style="display: flex; gap: 12px;">
-            <a href="{{ route('distributions.edit', $distribution) }}"
-                style="padding: 10px 16px; background: #0f766e; color: white; border-radius: 6px; text-decoration: none; font-weight: 700;">
-                Éditer
-            </a>
+            @if(!$distribution->estRegle())
+                <a href="{{ route('distributions.edit', $distribution) }}"
+                    style="padding: 10px 16px; background: #0f766e; color: white; border-radius: 6px; text-decoration: none; font-weight: 700;">
+                    Éditer
+                </a>
+            @endif
             <a href="{{ route('livreurs.distributions', $distribution->livreur) }}"
                 style="padding: 10px 16px; background: #f0f0f0; color: #172033; border: 1px solid #d9dee7; border-radius: 6px; text-decoration: none; font-weight: 700;">
                 Retour
@@ -25,6 +27,12 @@
         </div>
     @endif
 
+    @if (session('error'))
+        <div style="background: #fee; border: 1px solid #c33; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; color: #c33;">
+            {{ session('error') }}
+        </div>
+    @endif
+
     {{-- Métriques clés --}}
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <div style="padding: 16px; background: #fff; border: 1px solid #d9dee7; border-radius: 8px;">
@@ -36,10 +44,15 @@
             </p>
         </div>
         <div style="padding: 16px; background: #fff; border: 1px solid #d9dee7; border-radius: 8px;">
-            <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Montant attendu</p>
-            <p style="margin: 0; font-size: 20px; font-weight: 700; color: #172033;">{{ number_format($distribution->montant_attendu, 0, ',', ' ') }} F</p>
+            <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Produit</p>
+            <p style="margin: 0; font-size: 15px; font-weight: 700; color: #172033;">{{ $distribution->produit->nom ?? '—' }}</p>
         </div>
-        @if ($distribution->detailDistributions->isNotEmpty())
+        <div style="padding: 16px; background: #fff; border: 1px solid #d9dee7; border-radius: 8px;">
+            <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Pains attribués</p>
+            <p style="margin: 0; font-size: 20px; font-weight: 700; color: #172033;">{{ $distribution->pains_attribues }}</p>
+            <p style="margin: 4px 0 0; font-size: 11px; color: #667085;">{{ number_format($distribution->prix_pain, 0, ',', ' ') }} F / pain</p>
+        </div>
+        @if ($distribution->versement)
             <div style="padding: 16px; background: #fff; border: 1px solid #28a745; border-radius: 8px;">
                 <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Pains vendus</p>
                 <p style="margin: 0; font-size: 20px; font-weight: 700; color: #155724;">{{ $distribution->pains_vendus }}</p>
@@ -58,64 +71,31 @@
         </div>
     </div>
 
-    {{-- Tableau des produits --}}
-    <h2 style="margin: 0 0 16px; color: #172033; font-size: 16px; font-weight: 700;">Détail des produits</h2>
-
-    @if ($distribution->detailDistributions->isEmpty())
-        <p style="color: #667085; text-align: center; padding: 40px; background: #f9f9f9; border-radius: 6px;">
-            Aucun produit pour cette distribution.
-        </p>
-    @else
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #d9dee7; background: #f9f9f9;">
-                        <th style="padding: 12px; text-align: left; font-weight: 700; color: #172033;">Produit</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 700; color: #172033;">Prix unit.</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 700; color: #172033;">Attribués</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 700; color: #28a745;">Vendus</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 700; color: #f59e0b;">Retournés</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 700; color: #172033;">Montant</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($distribution->detailDistributions as $detail)
-                        @php
-                            $vendus  = max(0, $detail->quantite_attribuee - $detail->quantite_retournee);
-                            $montant = $vendus * $detail->produit->prix;
-                        @endphp
-                        <tr style="border-bottom: 1px solid #d9dee7;">
-                            <td style="padding: 12px; color: #172033;">
-                                <a href="{{ route('produits.show', $detail->produit) }}" style="color: #0f766e; text-decoration: none;">
-                                    {{ $detail->produit->nom }}
-                                </a>
-                            </td>
-                            <td style="padding: 12px; text-align: right; color: #667085;">{{ number_format($detail->produit->prix, 0, ',', ' ') }} F</td>
-                            <td style="padding: 12px; text-align: right; color: #172033; font-weight: 700;">{{ $detail->quantite_attribuee }}</td>
-                            <td style="padding: 12px; text-align: right; color: #155724; font-weight: 700;">{{ $vendus }}</td>
-                            <td style="padding: 12px; text-align: right; color: #92400e; font-weight: 700;">{{ $detail->quantite_retournee }}</td>
-                            <td style="padding: 12px; text-align: right; color: #172033; font-weight: 700;">{{ number_format($montant, 0, ',', ' ') }} F</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr style="background: #f0f5f4; border-top: 2px solid #d9dee7;">
-                        <td colspan="3" style="padding: 12px; font-weight: 700; color: #172033;">Total</td>
-                        <td style="padding: 12px; text-align: right; font-weight: 700; color: #155724;">{{ $distribution->pains_vendus }}</td>
-                        <td style="padding: 12px; text-align: right; font-weight: 700; color: #92400e;">{{ $distribution->invendus }}</td>
-                        <td style="padding: 12px; text-align: right; font-weight: 700; color: #172033;">{{ number_format($distribution->montant_attendu, 0, ',', ' ') }} F</td>
-                    </tr>
-                </tfoot>
-            </table>
+    <div style="padding: 16px; background: #f9f9f9; border-radius: 8px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+            <span style="color: #667085; font-weight: 600;">Montant attendu</span>
+            <span style="font-weight: 700; color: #172033;">{{ number_format($distribution->montant_attendu, 0, ',', ' ') }} F</span>
         </div>
-    @endif
+        @if ($distribution->versement)
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid #e5e7eb;">
+                <span style="color: #667085; font-weight: 600;">Montant versé</span>
+                <span style="font-weight: 700; color: #059669;">{{ number_format($distribution->versement->montant_verse, 0, ',', ' ') }} F</span>
+            </div>
+        @else
+            <div style="padding: 6px 0; border-top: 1px solid #e5e7eb; font-style: italic; color: #9ca3af; font-size: 13px;">
+                Versement non enregistré
+            </div>
+        @endif
+    </div>
 
     {{-- Actions --}}
-    <div style="margin-top: 24px; background: #f0f5f4; padding: 16px; border-radius: 6px; border: 1px solid #d9dee7; display: flex; gap: 12px;">
-        <a href="{{ route('distributions.edit', $distribution) }}"
-            style="padding: 10px 16px; background: #0f766e; color: white; text-decoration: none; border-radius: 6px; font-weight: 700;">
-            ✎ Éditer
-        </a>
+    <div style="background: #f0f5f4; padding: 16px; border-radius: 6px; border: 1px solid #d9dee7; display: flex; gap: 12px;">
+        @if(!$distribution->estRegle())
+            <a href="{{ route('distributions.edit', $distribution) }}"
+                style="padding: 10px 16px; background: #0f766e; color: white; text-decoration: none; border-radius: 6px; font-weight: 700;">
+                ✎ Éditer
+            </a>
+        @endif
         <form method="POST" action="{{ route('distributions.destroy', $distribution) }}"
             onsubmit="return confirm('Êtes-vous sûr ? Cette action est irréversible.');">
             @csrf

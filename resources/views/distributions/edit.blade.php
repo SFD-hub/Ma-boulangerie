@@ -14,7 +14,6 @@
             @method('PUT')
             @include('distributions._form', [
                 'distribution' => $distribution,
-                'livreurs'     => $livreurs,
                 'produits'     => $produits,
             ])
         </form>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\ConsommationAbonne;
 use App\Models\ClientAbonne;
 use Illuminate\Http\Request;
@@ -65,18 +66,29 @@ class ConsommationAbonneController extends Controller
             'quantite' => $validated['quantite'],
         ]);
 
+        ActivityLog::record(
+            'consommation_enregistree',
+            auth()->user()->name . ' a enregistré une consommation — ' . $client->nom . ' (' . $validated['quantite'] . ' pain' . ($validated['quantite'] > 1 ? 's' : '') . ')',
+            $boulangerie_id,
+            'consommation'
+        );
+
         return redirect()->route('consommations-abonnes.index')
             ->with('success', 'Consommation enregistrée avec succès.');
     }
 
     public function show(ConsommationAbonne $consommationAbonne): View
     {
+        abort_if($consommationAbonne->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
         return view('consommations-abonnes.show', compact('consommationAbonne'));
     }
 
     public function edit(ConsommationAbonne $consommationAbonne): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($consommationAbonne->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+
         $clients = ClientAbonne::where('boulangerie_id', $boulangerie_id)
             ->where('actif', true)
             ->orderBy('nom')
@@ -102,6 +114,7 @@ class ConsommationAbonneController extends Controller
         ]);
 
         $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($consommationAbonne->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         // Vérifier que le client appartient à la boulangerie
         $client = ClientAbonne::find($validated['client_abonne_id']);
@@ -122,6 +135,8 @@ class ConsommationAbonneController extends Controller
 
     public function destroy(ConsommationAbonne $consommationAbonne): RedirectResponse
     {
+        abort_if($consommationAbonne->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
         $clientId = $consommationAbonne->client_abonne_id;
         $consommationAbonne->delete();
 

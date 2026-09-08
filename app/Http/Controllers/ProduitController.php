@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Produit;
-use App\Models\CategorieProduit;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -13,8 +12,9 @@ class ProduitController extends Controller
     public function index(): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
+
         $produits = Produit::where('boulangerie_id', $boulangerie_id)
-            ->with('categorieProduit')
+            ->orderByDesc('actif')
             ->orderBy('nom')
             ->get();
 
@@ -23,46 +23,24 @@ class ProduitController extends Controller
 
     public function create(): View
     {
-        $boulangerie_id = auth()->user()->boulangerie_id;
-        $categories = CategorieProduit::where('boulangerie_id', $boulangerie_id)
-            ->orderBy('nom')
-            ->get();
-
-        return view('produits.create', compact('categories'));
+        return view('produits.create');
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'nom' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'prix' => 'required|numeric|min:0.01|decimal:0,2',
-            'categorie_produit_id' => 'required|exists:categories_produits,id',
-        ], [
-            'nom.required' => 'Le nom du produit est obligatoire.',
-            'nom.max' => 'Le nom ne doit pas dépasser 255 caractères.',
-            'prix.required' => 'Le prix est obligatoire.',
-            'prix.numeric' => 'Le prix doit être un nombre.',
-            'prix.min' => 'Le prix doit être supérieur à 0.',
-            'prix.decimal' => 'Le prix doit avoir au maximum 2 décimales.',
-            'categorie_produit_id.required' => 'La catégorie est obligatoire.',
-            'categorie_produit_id.exists' => 'La catégorie sélectionnée n\'existe pas.',
-        ]);
-
         $boulangerie_id = auth()->user()->boulangerie_id;
 
-        // Vérifier que la catégorie appartient à la boulangerie
-        $categorie = CategorieProduit::find($validated['categorie_produit_id']);
-        if ($categorie->boulangerie_id !== $boulangerie_id) {
-            return redirect()->back()
-                ->with('error', 'Catégorie invalide.');
-        }
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255|unique:produits,nom,NULL,id,boulangerie_id,' . $boulangerie_id,
+        ], [
+            'nom.required' => 'Le nom du produit est obligatoire.',
+            'nom.unique'   => 'Ce produit existe déjà.',
+            'nom.max'      => 'Le nom ne doit pas dépasser 255 caractères.',
+        ]);
 
         Produit::create([
-            'nom' => $validated['nom'],
-            'description' => $validated['description'],
-            'prix' => $validated['prix'],
-            'categorie_produit_id' => $validated['categorie_produit_id'],
+            'nom'            => $validated['nom'],
+            'actif'          => true,
             'boulangerie_id' => $boulangerie_id,
         ]);
 
@@ -70,64 +48,47 @@ class ProduitController extends Controller
             ->with('success', 'Produit créé avec succès.');
     }
 
-    public function show(Produit $produit): View
-    {
-        return view('produits.show', compact('produit'));
-    }
-
     public function edit(Produit $produit): View
     {
-        $boulangerie_id = auth()->user()->boulangerie_id;
-        $categories = CategorieProduit::where('boulangerie_id', $boulangerie_id)
-            ->orderBy('nom')
-            ->get();
+        abort_if($produit->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
-        return view('produits.edit', compact('produit', 'categories'));
+        return view('produits.edit', compact('produit'));
     }
 
     public function update(Request $request, Produit $produit): RedirectResponse
     {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($produit->boulangerie_id !== $boulangerie_id, 403);
+
         $validated = $request->validate([
-            'nom' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'prix' => 'required|numeric|min:0.01|decimal:0,2',
-            'categorie_produit_id' => 'required|exists:categories_produits,id',
+            'nom' => 'required|string|max:255|unique:produits,nom,' . $produit->id . ',id,boulangerie_id,' . $boulangerie_id,
         ], [
             'nom.required' => 'Le nom du produit est obligatoire.',
-            'nom.max' => 'Le nom ne doit pas dépasser 255 caractères.',
-            'prix.required' => 'Le prix est obligatoire.',
-            'prix.numeric' => 'Le prix doit être un nombre.',
-            'prix.min' => 'Le prix doit être supérieur à 0.',
-            'prix.decimal' => 'Le prix doit avoir au maximum 2 décimales.',
-            'categorie_produit_id.required' => 'La catégorie est obligatoire.',
-            'categorie_produit_id.exists' => 'La catégorie sélectionnée n\'existe pas.',
+            'nom.unique'   => 'Ce produit existe déjà.',
+            'nom.max'      => 'Le nom ne doit pas dépasser 255 caractères.',
         ]);
 
-        $boulangerie_id = auth()->user()->boulangerie_id;
+        $produit->update(['nom' => $validated['nom']]);
 
-        // Vérifier que la catégorie appartient à la boulangerie
-        $categorie = CategorieProduit::find($validated['categorie_produit_id']);
-        if ($categorie->boulangerie_id !== $boulangerie_id) {
-            return redirect()->back()
-                ->with('error', 'Catégorie invalide.');
-        }
-
-        $produit->update([
-            'nom' => $validated['nom'],
-            'description' => $validated['description'],
-            'prix' => $validated['prix'],
-            'categorie_produit_id' => $validated['categorie_produit_id'],
-        ]);
-
-        return redirect()->route('produits.show', $produit)
+        return redirect()->route('produits.index')
             ->with('success', 'Produit mis à jour avec succès.');
     }
 
-    public function destroy(Produit $produit): RedirectResponse
+    public function desactiver(Produit $produit): RedirectResponse
     {
-        $produit->delete();
+        abort_if($produit->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
-        return redirect()->route('produits.index')
-            ->with('success', 'Produit supprimé avec succès.');
+        $produit->update(['actif' => false]);
+
+        return redirect()->route('produits.index')->with('success', 'Produit désactivé.');
+    }
+
+    public function reactiver(Produit $produit): RedirectResponse
+    {
+        abort_if($produit->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
+        $produit->update(['actif' => true]);
+
+        return redirect()->route('produits.index')->with('success', 'Produit réactivé.');
     }
 }

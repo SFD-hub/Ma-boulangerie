@@ -2,8 +2,18 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Connexion — Boulangerie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Connexion — Ma Boulangerie</title>
+
+    {{-- ── PWA ── --}}
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#F97316">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Ma Boulangerie">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
+
     <style>
         :root {
             --orange: #F97316;
@@ -29,13 +39,19 @@
             width: 100%; max-width: 380px;
             box-shadow: 0 8px 30px rgba(0,0,0,.08);
         }
-        .brand-icon {
-            width: 72px; height: 72px;
-            background: var(--orange-bg);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 36px;
-            margin: 0 auto 16px;
+        .brand-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .brand-block img {
+            display: block;
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+            /* Compense l'espace transparent en bas du PNG */
+            margin-bottom: -30px;
         }
         .brand-name {
             text-align: center;
@@ -43,7 +59,6 @@
             color: var(--orange);
             text-transform: uppercase; letter-spacing: .04em;
             line-height: 1.3;
-            margin-bottom: 28px;
         }
         .form-group { margin-bottom: 16px; }
         .form-label {
@@ -89,8 +104,10 @@
 </head>
 <body>
     <div class="login-card">
-        <div class="brand-icon">🥖</div>
-        <div class="brand-name">Ma Boulangerie</div>
+        <div class="brand-block">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo">
+            <div class="brand-name">Ma Boulangerie</div>
+        </div>
 
         @if($errors->any())
             <div class="error-box">
@@ -129,12 +146,19 @@
             <button class="btn-login" type="submit">Se connecter</button>
         </form>
 
-        <a href="{{ route('register') }}" class="forgot" style="color:#F97316;font-weight:600">Créer un compte</a>
+        <a href="{{ route('password.info') }}" class="forgot">Mot de passe oublié ?</a>
+        <a href="{{ route('register') }}" class="forgot" style="color:#F97316;font-weight:600;margin-top:6px">Créer un compte</a>
     </div>
     <script>
         function togglePassword() {
             const input = document.getElementById('password');
             input.type = input.type === 'password' ? 'text' : 'password';
+        }
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .catch(function(err) { console.warn('SW:', err); });
+            });
         }
     </script>
 </body>

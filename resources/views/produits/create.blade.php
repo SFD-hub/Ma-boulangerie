@@ -9,6 +9,6 @@
 @section('content')
     <form method="POST" action="{{ route('produits.store') }}">
         @csrf
-        @include('produits._form', ['categories' => $categories])
+        @include('produits._form')
     </form>
 @endsection

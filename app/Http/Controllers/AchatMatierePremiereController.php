@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AchatMatierePremiere;
+use App\Models\ActivityLog;
 use App\Models\Depense;
 use App\Models\MatierePremiere;
 use Illuminate\Http\Request;
@@ -40,15 +41,16 @@ class AchatMatierePremiereController extends Controller
     {
         $validated = $request->validate([
             'matiere_premiere_id' => 'required|exists:matieres_premieres,id',
-            'quantite'            => 'required|integer|min:1',
+            'quantite'            => 'required|numeric|min:0.5|max:999999.99',
             'montant'             => 'required|numeric|min:0.01',
             'date_achat'          => 'required|date|before_or_equal:today',
         ], [
             'matiere_premiere_id.required' => 'La matière première est obligatoire.',
             'matiere_premiere_id.exists'   => 'La matière première sélectionnée n\'existe pas.',
             'quantite.required'            => 'La quantité est obligatoire.',
-            'quantite.integer'             => 'La quantité doit être un nombre entier.',
-            'quantite.min'                 => 'La quantité doit être au moins 1.',
+            'quantite.numeric'             => 'La quantité doit être un nombre (les demi-sacs sont acceptés, ex: 5.5).',
+            'quantite.min'                 => 'La quantité doit être au moins 0,5.',
+            'quantite.max'                 => 'La quantité est trop élevée.',
             'montant.required'             => 'Le prix total est obligatoire.',
             'montant.numeric'              => 'Le prix total doit être un nombre.',
             'montant.min'                  => 'Le prix total doit être supérieur à 0.',
@@ -62,23 +64,35 @@ class AchatMatierePremiereController extends Controller
         abort_if($matierePremiere->boulangerie_id !== $boulangerie_id, 403);
 
         DB::transaction(function () use ($validated, $matierePremiere, $boulangerie_id) {
+            // Verrouille la ligne de stock pour éviter qu'un achat concurrent
+            // (même matière première, même instant) ne lise la même valeur
+            // et n'en écrase un des deux à l'enregistrement.
+            $mp = MatierePremiere::where('id', $matierePremiere->id)->lockForUpdate()->firstOrFail();
+
             // Enregistrer l'achat
             AchatMatierePremiere::create($validated);
 
             // Incrémenter le stock
-            $matierePremiere->stock_actuel += $validated['quantite'];
-            $matierePremiere->save();
+            $mp->stock_actuel += $validated['quantite'];
+            $mp->save();
 
             // Créer automatiquement la dépense correspondante
-            $categorie = ($matierePremiere->nom === 'Farine') ? 'achat_farine' : 'achat_levure';
+            $categorie = ($mp->nom === 'Farine') ? 'achat_farine' : 'achat_levure';
 
             Depense::create([
                 'boulangerie_id' => $boulangerie_id,
-                'libelle'        => 'Achat ' . $matierePremiere->nom . ' — ' . $validated['quantite'] . ' ' . ($matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets'),
+                'libelle'        => 'Achat ' . $mp->nom . ' — ' . $validated['quantite'] . ' ' . ($mp->nom === 'Farine' ? 'sacs' : 'paquets'),
                 'categorie'      => $categorie,
                 'montant'        => $validated['montant'],
                 'date_depense'   => $validated['date_achat'],
             ]);
+
+            ActivityLog::record(
+                'achat_matiere_premiere',
+                auth()->user()->name . ' a acheté ' . $validated['quantite'] . ' ' . ($mp->nom === 'Farine' ? 'sacs' : 'paquets') . ' de ' . $mp->nom . ' — ' . number_format($validated['montant'], 0, ',', ' ') . ' FCFA',
+                $boulangerie_id,
+                'achat'
+            );
         });
 
         return redirect()->route('matieres-premieres.index')
@@ -88,6 +102,7 @@ class AchatMatierePremiereController extends Controller
     public function show(AchatMatierePremiere $achatMatierePremiere): View
     {
         $achatMatierePremiere->load('matierePremiere');
+        abort_if($achatMatierePremiere->matierePremiere->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         return view('achats-matieres-premieres.show', compact('achatMatierePremiere'));
     }
@@ -95,6 +110,9 @@ class AchatMatierePremiereController extends Controller
     public function edit(AchatMatierePremiere $achatMatierePremiere): View
     {
         $boulangerie_id   = auth()->user()->boulangerie_id;
+        $achatMatierePremiere->load('matierePremiere');
+        abort_if($achatMatierePremiere->matierePremiere->boulangerie_id !== $boulangerie_id, 403);
+
         $matieresPremières = MatierePremiere::where('boulangerie_id', $boulangerie_id)
             ->orderBy('nom')
             ->get();
@@ -106,13 +124,14 @@ class AchatMatierePremiereController extends Controller
     {
         $validated = $request->validate([
             'matiere_premiere_id' => 'required|exists:matieres_premieres,id',
-            'quantite'            => 'required|integer|min:1',
+            'quantite'            => 'required|numeric|min:0.5|max:999999.99',
             'montant'             => 'required|numeric|min:0.01',
             'date_achat'          => 'required|date|before_or_equal:today',
         ], [
             'matiere_premiere_id.required' => 'La matière première est obligatoire.',
             'quantite.required'            => 'La quantité est obligatoire.',
-            'quantite.min'                 => 'La quantité doit être au moins 1.',
+            'quantite.min'                 => 'La quantité doit être au moins 0,5.',
+            'quantite.max'                 => 'La quantité est trop élevée.',
             'montant.required'             => 'Le prix total est obligatoire.',
             'montant.min'                  => 'Le prix total doit être supérieur à 0.',
             'date_achat.required'          => 'La date d\'achat est obligatoire.',
@@ -120,25 +139,33 @@ class AchatMatierePremiereController extends Controller
         ]);
 
         $boulangerie_id  = auth()->user()->boulangerie_id;
-        $matierePremiere = MatierePremiere::findOrFail($validated['matiere_premiere_id']);
-        abort_if($matierePremiere->boulangerie_id !== $boulangerie_id, 403);
+        // Vérifie que l'achat lui-même appartient à cette boulangerie
+        $achatMatierePremiere->load('matierePremiere');
+        abort_if($achatMatierePremiere->matierePremiere->boulangerie_id !== $boulangerie_id, 403);
+
+        $matierePremiereRef = MatierePremiere::findOrFail($validated['matiere_premiere_id']);
+        abort_if($matierePremiereRef->boulangerie_id !== $boulangerie_id, 403);
 
         $diff = $validated['quantite'] - $achatMatierePremiere->quantite;
 
-        if ($matierePremiere->stock_actuel + $diff < 0) {
-            return redirect()->back()
-                ->with('error', 'Stock insuffisant pour réduire la quantité de cet achat.');
-        }
+        $resultat = DB::transaction(function () use ($validated, $achatMatierePremiere, $matierePremiereRef, $diff, $boulangerie_id) {
+            // Verrouille la ligne de stock avant de revérifier la suffisance —
+            // la vérification faite avant la transaction peut être obsolète
+            // si un autre achat/production a modifié le stock entre-temps.
+            $mp = MatierePremiere::where('id', $matierePremiereRef->id)->lockForUpdate()->firstOrFail();
 
-        DB::transaction(function () use ($validated, $achatMatierePremiere, $matierePremiere, $diff, $boulangerie_id) {
+            if ($mp->stock_actuel + $diff < 0) {
+                return false;
+            }
+
             $ancienMontant = $achatMatierePremiere->montant;
             $achatMatierePremiere->update($validated);
 
-            $matierePremiere->stock_actuel += $diff;
-            $matierePremiere->save();
+            $mp->stock_actuel += $diff;
+            $mp->save();
 
             // Mettre à jour la dépense automatique liée (même date, même libellé contenant la matière)
-            $categorie = ($matierePremiere->nom === 'Farine') ? 'achat_farine' : 'achat_levure';
+            $categorie = ($mp->nom === 'Farine') ? 'achat_farine' : 'achat_levure';
             Depense::where('boulangerie_id', $boulangerie_id)
                 ->where('categorie', $categorie)
                 ->where('montant', $ancienMontant)
@@ -146,11 +173,18 @@ class AchatMatierePremiereController extends Controller
                 ->orderByDesc('id')
                 ->limit(1)
                 ->update([
-                    'libelle'      => 'Achat ' . $matierePremiere->nom . ' — ' . $validated['quantite'] . ' ' . ($matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets'),
+                    'libelle'      => 'Achat ' . $mp->nom . ' — ' . $validated['quantite'] . ' ' . ($mp->nom === 'Farine' ? 'sacs' : 'paquets'),
                     'montant'      => $validated['montant'],
                     'date_depense' => $validated['date_achat'],
                 ]);
+
+            return true;
         });
+
+        if (! $resultat) {
+            return redirect()->back()
+                ->with('error', 'Stock insuffisant pour réduire la quantité de cet achat.');
+        }
 
         return redirect()->route('achats-matieres-premieres.index')
             ->with('success', 'Achat mis à jour.');
@@ -159,9 +193,11 @@ class AchatMatierePremiereController extends Controller
     public function destroy(AchatMatierePremiere $achatMatierePremiere): RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
+        $achatMatierePremiere->load('matierePremiere');
+        abort_if($achatMatierePremiere->matierePremiere->boulangerie_id !== $boulangerie_id, 403);
 
         DB::transaction(function () use ($achatMatierePremiere, $boulangerie_id) {
-            $matierePremiere = $achatMatierePremiere->matierePremiere;
+            $matierePremiere = MatierePremiere::where('id', $achatMatierePremiere->matiere_premiere_id)->lockForUpdate()->firstOrFail();
             $matierePremiere->stock_actuel = max(0, $matierePremiere->stock_actuel - $achatMatierePremiere->quantite);
             $matierePremiere->save();
 

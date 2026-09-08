@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\ClientAbonne;
 use App\Models\Depense;
 use App\Models\Distribution;
-use App\Models\Facture;
 use App\Models\Livreur;
 use App\Models\MatierePremiere;
+use App\Models\PaiementFacture;
 use App\Models\Production;
 use App\Models\Versement;
 use Carbon\Carbon;
@@ -45,12 +45,10 @@ class StatistiqueController extends Controller
             'livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
         )->whereBetween('date_versement', [$debutMois, $finMois])->sum('montant_verse');
 
-        $facturesMois = (float) Facture::whereHas(
-            'clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
-        )->where('statut', 'payee')
-         ->whereNotNull('date_paiement')
-         ->whereBetween('date_paiement', [$debutMois, $finMois])
-         ->sum('montant_total');
+        $facturesMois = (float) PaiementFacture::whereHas(
+            'facture.clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
+        )->whereBetween('date_paiement', [$debutMois, $finMois])
+         ->sum('montant');
 
         $recettesMois = $versementsMois + $facturesMois;
 

@@ -30,12 +30,11 @@
             box-shadow: 0 8px 30px rgba(0,0,0,.08);
         }
         .brand-icon {
-            width: 72px; height: 72px;
+            width: 100px; height: 100px;
             background: var(--orange-bg);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 36px;
-            margin: 0 auto 16px;
+            margin: 0 auto 20px;
         }
         .brand-name {
             text-align: center;
@@ -92,7 +91,9 @@
 </head>
 <body>
     <div class="card">
-        <div class="brand-icon">🥖</div>
+        <div class="brand-icon">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo" style="width:72px;height:72px;object-fit:contain">
+        </div>
         <div class="brand-name">Ma Boulangerie</div>
         <div class="brand-sub">Créez votre compte</div>
 

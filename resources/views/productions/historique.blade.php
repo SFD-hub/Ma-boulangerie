@@ -44,12 +44,13 @@
                     {{-- Infos --}}
                     <div style="flex:1;min-width:0">
                         <div style="font-size:14px;font-weight:700;color:#111827">
-                            {{ $prod->date_production->format('d/m/Y') }}
+                            {{ $prod->produit->nom ?? '—' }} · {{ $prod->date_production->format('d/m/Y') }}
+                            <span style="font-size:12px;font-weight:600;color:#9CA3AF">{{ $prod->moment_icon }} {{ $prod->moment }} · {{ $prod->heure_enregistrement }}</span>
                         </div>
                         <div style="font-size:13px;color:#6B7280;margin-top:2px">
-                            {{ $prod->nombre_sacs }}&nbsp;sac{{ $prod->nombre_sacs > 1 ? 's' : '' }} farine
+                            {{ \App\Support\Nombre::qte($prod->nombre_sacs) }}&nbsp;sac{{ $prod->nombre_sacs > 1 ? 's' : '' }} farine
                             &nbsp;·&nbsp;
-                            {{ $prod->quantite_levure }}&nbsp;paquet{{ $prod->quantite_levure > 1 ? 's' : '' }} levure
+                            {{ \App\Support\Nombre::qte($prod->quantite_levure) }}&nbsp;paquet{{ $prod->quantite_levure > 1 ? 's' : '' }} levure
                         </div>
                         <div style="font-size:13px;font-weight:700;color:#F97316;margin-top:2px">
                             {{ number_format($prod->nombre_pains_produits, 0, ',', ' ') }} pains
@@ -88,6 +89,39 @@
             @endforeach
 
         </div>
+
+        {{-- ── Pagination ── --}}
+        @if($productions->hasPages())
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px">
+
+                @if($productions->onFirstPage())
+                    <span style="font-size:14px;font-weight:600;color:#D1D5DB;padding:10px 16px;background:#F9FAFB;border-radius:10px">
+                        ← Précédent
+                    </span>
+                @else
+                    <a href="{{ $productions->previousPageUrl() }}"
+                       style="font-size:14px;font-weight:600;color:#F97316;padding:10px 16px;background:#FFF7ED;border-radius:10px;text-decoration:none">
+                        ← Précédent
+                    </a>
+                @endif
+
+                <span style="font-size:13px;color:#9CA3AF;font-weight:500">
+                    Page {{ $productions->currentPage() }} / {{ $productions->lastPage() }}
+                </span>
+
+                @if($productions->hasMorePages())
+                    <a href="{{ $productions->nextPageUrl() }}"
+                       style="font-size:14px;font-weight:600;color:#F97316;padding:10px 16px;background:#FFF7ED;border-radius:10px;text-decoration:none">
+                        Suivant →
+                    </a>
+                @else
+                    <span style="font-size:14px;font-weight:600;color:#D1D5DB;padding:10px 16px;background:#F9FAFB;border-radius:10px">
+                        Suivant →
+                    </span>
+                @endif
+
+            </div>
+        @endif
 
         {{-- ── Total pains ── --}}
         <div style="background:#F97316;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">

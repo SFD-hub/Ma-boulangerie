@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BilanFinancier;
 use App\Models\Depense;
-use App\Models\Facture;
+use App\Models\PaiementFacture;
 use App\Models\Versement;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -146,12 +146,13 @@ class BilanController extends Controller
             'livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
         )->whereBetween('date_versement', [$debut, $fin])->sum('montant_verse');
 
-        $facturesAbonnes = (float) Facture::whereHas(
-            'clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
-        )->where('statut', 'payee')
-         ->whereNotNull('date_paiement')
-         ->whereBetween('date_paiement', [$debut, $fin])
-         ->sum('montant_total');
+        // Basé sur les paiements réellement reçus (pas sur le statut de la
+        // facture) : une facture payée en plusieurs tranches à cheval sur
+        // deux mois doit créditer chaque mois du montant reçu ce mois-là.
+        $facturesAbonnes = (float) PaiementFacture::whereHas(
+            'facture.clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
+        )->whereBetween('date_paiement', [$debut, $fin])
+         ->sum('montant');
 
         $totalRecettes = $versementsLivreurs + $facturesAbonnes;
 
@@ -171,7 +172,8 @@ class BilanController extends Controller
         $carburant      = (float) ($d['carburant']       ?? 0);
         $transport      = (float) ($d['transport']       ?? 0);
         $reparation     = (float) (($d['reparation']     ?? 0) + ($d['entretien'] ?? 0));
-        $autres         = (float) (($d['autre']          ?? 0) + ($d['divers']    ?? 0));
+        $autres         = (float) (($d['autre']          ?? 0) + ($d['divers']    ?? 0)
+                                + ($d['huile']          ?? 0) + ($d['sel']       ?? 0));
 
         $totalDepenses = $achatFarine + $achatLevure + $salaireGerant + $salaireEmploye
                        + $eau + $electricite + $carburant + $transport + $reparation + $autres;

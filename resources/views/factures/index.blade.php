@@ -52,7 +52,7 @@
                                 {{ $facture->mois }}/{{ $facture->annee }}
                             </td>
                             <td style="padding: 12px; text-align: right; color: #172033;">
-                                {{ number_format($facture->montant_total, 2, ',', ' ') }} €
+                                {{ number_format($facture->montant_total, 0, ',', ' ') }} FCFA
                             </td>
                             <td style="padding: 12px; color: #667085;">
                                 {{ ucfirst($facture->statut) }}

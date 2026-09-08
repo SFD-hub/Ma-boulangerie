@@ -10,6 +10,6 @@
     <form method="POST" action="{{ route('produits.update', $produit) }}">
         @csrf
         @method('PUT')
-        @include('produits._form', ['produit' => $produit, 'categories' => $categories])
+        @include('produits._form', ['produit' => $produit])
     </form>
 @endsection

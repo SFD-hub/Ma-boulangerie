@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Facture;
 use App\Models\ClientAbonne;
 use App\Models\ConsommationAbonne;
+use App\Models\PaiementFacture;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
@@ -72,14 +73,22 @@ class FactureController extends Controller
         $boulangerie_id = auth()->user()->boulangerie_id;
         abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
-        if ($facture->statut === 'payee') {
+        $solde = $facture->solde();
+
+        if ($solde <= 0) {
             return redirect()->back()->with('error', 'Cette facture est déjà payée.');
         }
 
-        $facture->update([
-            'statut'        => 'payee',
+        // "Solder en un clic" : enregistre un paiement couvrant tout le solde
+        // restant, pour rester cohérent avec l'historique des paiements même
+        // quand l'utilisateur ne veut pas détailler par tranche.
+        PaiementFacture::create([
+            'facture_id'    => $facture->id,
             'date_paiement' => now()->toDateString(),
+            'montant'       => $solde,
         ]);
+
+        $facture->syncStatut();
 
         return redirect()->back()
             ->with('success', 'Facture marquée comme payée.');

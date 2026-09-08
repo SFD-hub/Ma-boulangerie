@@ -35,7 +35,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Quantité * <span id="unitLabel" style="color:var(--text2);font-weight:400">(sacs / paquets)</span></label>
-                    <input class="form-input" type="number" name="quantite" min="1"
+                    <input class="form-input" type="number" name="quantite" min="0.5" step="0.5"
                            value="{{ old('quantite', $achatMatierePremiere->quantite) }}" required>
                 </div>
                 <div class="form-group">

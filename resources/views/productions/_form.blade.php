@@ -14,17 +14,34 @@
 </div>
 
 <div class="form-group">
-    <label class="form-label">Sacs de farine * <span style="font-weight:400;font-size:12px;color:#718096">(1 sac = 50 kg)</span></label>
-    <input class="form-input" type="number" name="nombre_sacs" min="1"
-           value="{{ old('nombre_sacs', isset($production) ? $production->nombre_sacs : '') }}"
-           placeholder="ex: 2" required>
+    <label class="form-label">Produit *</label>
+    <select class="form-input" name="produit_id" required>
+        @foreach($produits as $produit)
+            <option value="{{ $produit->id }}"
+                {{ old('produit_id', isset($production) ? $production->produit_id : ($defaultProduitId ?? '')) == $produit->id ? 'selected' : '' }}>
+                {{ $produit->nom }}
+            </option>
+        @endforeach
+    </select>
+    @if($produits->isEmpty())
+        <p style="margin:8px 0 0;font-size:12px;color:#EF4444">
+            Aucun produit configuré. <a href="{{ route('produits.create') }}">Créez-en un</a> avant de continuer.
+        </p>
+    @endif
 </div>
 
 <div class="form-group">
-    <label class="form-label">Paquets de levure * <span style="font-weight:400;font-size:12px;color:#718096">(1 paquet = 1 kg)</span></label>
-    <input class="form-input" type="number" name="nombre_paquets_levure" min="1"
+    <label class="form-label">Sacs de farine *</label>
+    <input class="form-input" type="number" name="nombre_sacs" min="0.5" step="0.5"
+           value="{{ old('nombre_sacs', isset($production) ? $production->nombre_sacs : '') }}"
+           placeholder="ex: 5" required>
+</div>
+
+<div class="form-group">
+    <label class="form-label">Paquets de levure *</label>
+    <input class="form-input" type="number" name="nombre_paquets_levure" min="0.5" step="0.5"
            value="{{ old('nombre_paquets_levure', isset($production) ? $production->quantite_levure : '') }}"
-           placeholder="ex: 1" required>
+           placeholder="ex: 2" required>
 </div>
 
 <div class="form-group">

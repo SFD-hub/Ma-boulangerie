@@ -5,16 +5,7 @@
 @section('content')
 
     @php
-        $icones  = \App\Http\Controllers\DepenseController::CATEGORIES_ICONES;
         $libelles = \App\Http\Controllers\DepenseController::CATEGORIES_LIBELLES;
-        $iconBg  = [
-            'achat_farine' => '#FFF3E0',
-            'achat_levure' => '#FFF0F0',
-            'salaire'      => '#EFF6FF',
-            'transport'    => '#F5F3FF',
-            'entretien'    => '#F0FDF4',
-            'divers'       => '#F3F4F6',
-        ];
     @endphp
 
     {{-- ── En-tête ── --}}
@@ -47,16 +38,11 @@
             @foreach($depenses as $depense)
                 @php
                     $isAuto  = in_array($depense->categorie, ['achat_farine', 'achat_levure']);
-                    $icone   = $icones[$depense->categorie]  ?? '📌';
-                    $bg      = $iconBg[$depense->categorie]  ?? '#F3F4F6';
                     $libelle = $libelles[$depense->categorie] ?? $depense->categorie;
                 @endphp
                 <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}position:relative">
 
-                    {{-- Icône --}}
-                    <div style="width:44px;height:44px;border-radius:11px;background:{{ $bg }};display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0">
-                        {{ $icone }}
-                    </div>
+                    <x-depense-icone :categorie="$depense->categorie" />
 
                     {{-- Infos --}}
                     <div style="flex:1;min-width:0">
@@ -112,6 +98,39 @@
             @endforeach
 
         </div>
+
+        {{-- ── Pagination ── --}}
+        @if($depenses->hasPages())
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px">
+
+                @if($depenses->onFirstPage())
+                    <span style="font-size:14px;font-weight:600;color:#D1D5DB;padding:10px 16px;background:#F9FAFB;border-radius:10px">
+                        ← Précédent
+                    </span>
+                @else
+                    <a href="{{ $depenses->previousPageUrl() }}"
+                       style="font-size:14px;font-weight:600;color:#F97316;padding:10px 16px;background:#FFF7ED;border-radius:10px;text-decoration:none">
+                        ← Précédent
+                    </a>
+                @endif
+
+                <span style="font-size:13px;color:#9CA3AF;font-weight:500">
+                    Page {{ $depenses->currentPage() }} / {{ $depenses->lastPage() }}
+                </span>
+
+                @if($depenses->hasMorePages())
+                    <a href="{{ $depenses->nextPageUrl() }}"
+                       style="font-size:14px;font-weight:600;color:#F97316;padding:10px 16px;background:#FFF7ED;border-radius:10px;text-decoration:none">
+                        Suivant →
+                    </a>
+                @else
+                    <span style="font-size:14px;font-weight:600;color:#D1D5DB;padding:10px 16px;background:#F9FAFB;border-radius:10px">
+                        Suivant →
+                    </span>
+                @endif
+
+            </div>
+        @endif
 
         {{-- ── Total dépenses ── --}}
         <div style="background:#F97316;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">

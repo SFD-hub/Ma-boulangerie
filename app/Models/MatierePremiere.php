@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MatierePremiere extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $table = 'matieres_premieres';
 
@@ -21,8 +22,8 @@ class MatierePremiere extends Model
     ];
 
     protected $casts = [
-        'stock_actuel' => 'integer',
-        'seuil_alerte' => 'integer',
+        'stock_actuel' => 'decimal:2',
+        'seuil_alerte' => 'decimal:2',
     ];
 
     public function boulangerie(): BelongsTo

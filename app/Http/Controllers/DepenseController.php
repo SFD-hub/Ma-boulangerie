@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Depense;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,6 +19,8 @@ class DepenseController extends Controller
         'transport'       => 'Transport',
         'carburant'       => 'Carburant',
         'reparation'      => 'Réparation / Maintenance',
+        'huile'           => 'Huile',
+        'sel'             => 'Sel',
         'autre'           => 'Autre',
     ];
 
@@ -34,6 +37,8 @@ class DepenseController extends Controller
         'carburant'      => 'Carburant',
         'reparation'     => 'Réparation / Maintenance',
         'entretien'      => 'Entretien',
+        'huile'          => 'Huile',
+        'sel'            => 'Sel',
         'divers'         => 'Divers',
         'autre'          => 'Autre',
     ];
@@ -51,6 +56,8 @@ class DepenseController extends Controller
         'carburant'      => '⛽',
         'reparation'     => '🔧',
         'entretien'      => '🔧',
+        'huile'          => '🫙',
+        'sel'            => '🧂',
         'divers'         => '📌',
         'autre'          => '📌',
     ];
@@ -74,12 +81,13 @@ class DepenseController extends Controller
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
 
+        $totalGlobal = (float) Depense::where('boulangerie_id', $boulangerie_id)->sum('montant');
+
         $depenses = Depense::where('boulangerie_id', $boulangerie_id)
             ->orderByDesc('date_depense')
             ->orderByDesc('id')
-            ->get();
-
-        $totalGlobal = (float) $depenses->sum('montant');
+            ->paginate(20)
+            ->withQueryString();
 
         return view('depenses.historique', compact('depenses', 'totalGlobal'));
     }
@@ -107,9 +115,18 @@ class DepenseController extends Controller
             'date_depense.before_or_equal' => 'La date ne peut pas être dans le futur.',
         ]);
 
+        $boulangerie_id = auth()->user()->boulangerie_id;
+
         Depense::create(array_merge($validated, [
-            'boulangerie_id' => auth()->user()->boulangerie_id,
+            'boulangerie_id' => $boulangerie_id,
         ]));
+
+        ActivityLog::record(
+            'depense_creee',
+            auth()->user()->name . ' a ajouté une dépense de ' . number_format($validated['montant'], 0, ',', ' ') . ' FCFA — ' . $validated['libelle'],
+            $boulangerie_id,
+            'depense'
+        );
 
         return redirect()->route('depenses.index')
             ->with('success', 'Dépense ajoutée.');

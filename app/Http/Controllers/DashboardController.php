@@ -12,6 +12,7 @@ use App\Models\Production;
 use App\Models\User;
 use App\Models\Versement;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -69,94 +70,124 @@ class DashboardController extends Controller
         ));
     }
 
+    public function activites(): View
+    {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+
+        $all     = $this->collectActivites($boulangerie_id, limit: null);
+        $perPage = 20;
+        $page    = (int) request()->get('page', 1);
+        $items   = array_slice($all, ($page - 1) * $perPage, $perPage);
+
+        $paginator = new LengthAwarePaginator(
+            $items,
+            count($all),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return view('dashboard.activites', ['activites' => $paginator]);
+    }
+
     private function derniereActivite(int $boulangerie_id): array
     {
+        $events = $this->collectActivites($boulangerie_id, limit: 3);
+        return array_slice($events, 0, 5);
+    }
+
+    /**
+     * Collecte et trie toutes les activités d'une boulangerie.
+     * $limit : nombre max de lignes chargées par table (null = toutes).
+     */
+    private function collectActivites(int $boulangerie_id, ?int $limit): array
+    {
         // IMPORTANT : les arrow functions (fn) capturent par valeur en PHP —
-        // $events[] = [...] à l'intérieur d'une fn ne modifie jamais l'original.
         // On utilise map()->toArray() + array_merge() pour éviter ce piège.
 
         $events = [];
 
         // Productions
+        $q = Production::where('boulangerie_id', $boulangerie_id)->orderByDesc('created_at');
+        if ($limit) $q->limit($limit);
         $events = array_merge($events,
-            Production::where('boulangerie_id', $boulangerie_id)
-                ->orderByDesc('created_at')->limit(3)->get()
-                ->map(fn ($p) => [
-                    'icon'  => '🍞',
-                    'label' => 'Production enregistrée',
-                    'sub'   => number_format($p->nombre_pains_produits, 0, ',', ' ') . ' pains — ' . $p->date_production->format('d/m/Y'),
-                    'at'    => $p->created_at,
-                ])->toArray()
+            $q->get()->map(fn ($p) => [
+                'icon'  => '🍞',
+                'label' => 'Production enregistrée',
+                'sub'   => number_format($p->nombre_pains_produits, 0, ',', ' ') . ' pains — ' . $p->date_production->format('d/m/Y'),
+                'at'    => $p->created_at,
+            ])->toArray()
         );
 
         // Achats stock
+        $q = AchatMatierePremiere::whereHas('matierePremiere', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
+            ->with('matierePremiere')->orderByDesc('created_at');
+        if ($limit) $q->limit($limit);
         $events = array_merge($events,
-            AchatMatierePremiere::whereHas('matierePremiere', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
-                ->with('matierePremiere')
-                ->orderByDesc('created_at')->limit(3)->get()
-                ->map(fn ($a) => [
-                    'icon'  => '📦',
-                    'label' => 'Achat ' . $a->matierePremiere->nom,
-                    'sub'   => $a->quantite . ' ' . ($a->matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets') . ' · ' . number_format($a->montant, 0, ',', ' ') . ' FCFA',
-                    'at'    => $a->created_at,
-                ])->toArray()
+            $q->get()->map(fn ($a) => [
+                'icon'  => '📦',
+                'label' => 'Achat ' . $a->matierePremiere->nom,
+                'sub'   => $a->quantite . ' ' . ($a->matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets') . ' · ' . number_format($a->montant, 0, ',', ' ') . ' FCFA',
+                'at'    => $a->created_at,
+            ])->toArray()
         );
 
         // Versements livreurs
+        $q = Versement::whereHas('livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
+            ->with('livreur')->orderByDesc('created_at');
+        if ($limit) $q->limit($limit);
         $events = array_merge($events,
-            Versement::whereHas('livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
-                ->with('livreur')
-                ->orderByDesc('created_at')->limit(3)->get()
-                ->map(fn ($v) => [
-                    'icon'  => '💰',
-                    'label' => 'Versement — ' . $v->livreur->prenom . ' ' . $v->livreur->nom,
-                    'sub'   => number_format($v->montant_verse, 0, ',', ' ') . ' FCFA — ' . $v->date_versement->format('d/m/Y'),
-                    'at'    => $v->created_at,
-                ])->toArray()
+            $q->get()->map(fn ($v) => [
+                'icon'  => '💰',
+                'label' => 'Versement — ' . $v->livreur->prenom . ' ' . $v->livreur->nom,
+                'sub'   => number_format($v->montant_verse, 0, ',', ' ') . ' FCFA — ' . $v->date_versement->format('d/m/Y'),
+                'at'    => $v->created_at,
+            ])->toArray()
         );
 
-        // Dépenses manuelles (salaire, divers — hors achats stock auto)
+        // Dépenses manuelles (hors achats stock auto)
+        $q = Depense::where('boulangerie_id', $boulangerie_id)
+            ->whereNotIn('categorie', ['achat_farine', 'achat_levure'])
+            ->orderByDesc('created_at');
+        if ($limit) $q->limit($limit);
         $events = array_merge($events,
-            Depense::where('boulangerie_id', $boulangerie_id)
-                ->whereNotIn('categorie', ['achat_farine', 'achat_levure'])
-                ->orderByDesc('created_at')->limit(3)->get()
-                ->map(fn ($d) => [
-                    'icon'  => '💸',
-                    'label' => 'Dépense — ' . ($d->libelle ?: ucfirst(str_replace('_', ' ', $d->categorie))),
-                    'sub'   => number_format($d->montant, 0, ',', ' ') . ' FCFA — ' . $d->date_depense->format('d/m/Y'),
-                    'at'    => $d->created_at,
-                ])->toArray()
+            $q->get()->map(fn ($d) => [
+                'icon'  => '💸',
+                'label' => 'Dépense — ' . ($d->libelle ?: ucfirst(str_replace('_', ' ', $d->categorie))),
+                'sub'   => number_format($d->montant, 0, ',', ' ') . ' FCFA — ' . $d->date_depense->format('d/m/Y'),
+                'at'    => $d->created_at,
+            ])->toArray()
         );
 
         // Consommations abonnés
+        $q = ConsommationAbonne::whereHas('clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
+            ->with('clientAbonne')->orderByDesc('created_at');
+        if ($limit) $q->limit($limit);
         $events = array_merge($events,
-            ConsommationAbonne::whereHas('clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
-                ->with('clientAbonne')
-                ->orderByDesc('created_at')->limit(3)->get()
-                ->map(fn ($c) => [
-                    'icon'  => '👤',
-                    'label' => 'Consommation — ' . $c->clientAbonne->nom,
-                    'sub'   => $c->quantite . ' pain' . ($c->quantite > 1 ? 's' : '') . ' — ' . $c->date_consommation->format('d/m/Y'),
-                    'at'    => $c->created_at,
-                ])->toArray()
+            $q->get()->map(fn ($c) => [
+                'icon'  => '👤',
+                'label' => 'Consommation — ' . $c->clientAbonne->nom,
+                'sub'   => $c->quantite . ' pain' . ($c->quantite > 1 ? 's' : '') . ' — ' . $c->date_consommation->format('d/m/Y'),
+                'at'    => $c->created_at,
+            ])->toArray()
         );
 
         // Gérants créés
+        $q = User::where('boulangerie_id', $boulangerie_id)
+            ->whereHas('role', fn ($q) => $q->where('nom', 'gerant'))
+            ->orderByDesc('created_at');
+        if ($limit) $q->limit($limit);
         $events = array_merge($events,
-            User::where('boulangerie_id', $boulangerie_id)
-                ->whereHas('role', fn ($q) => $q->where('nom', 'gerant'))
-                ->orderByDesc('created_at')->limit(2)->get()
-                ->map(fn ($u) => [
-                    'icon'  => '👔',
-                    'label' => 'Gérant ajouté — ' . $u->name,
-                    'sub'   => 'Compte créé le ' . $u->created_at->format('d/m/Y'),
-                    'at'    => $u->created_at,
-                ])->toArray()
+            $q->get()->map(fn ($u) => [
+                'icon'  => '👔',
+                'label' => 'Gérant ajouté — ' . $u->name,
+                'sub'   => 'Compte créé le ' . $u->created_at->format('d/m/Y'),
+                'at'    => $u->created_at,
+            ])->toArray()
         );
 
-        // Trier par date décroissante et garder les 5 plus récentes
         usort($events, fn ($a, $b) => $b['at'] <=> $a['at']);
 
-        return array_slice($events, 0, 5);
+        return $events;
     }
 }

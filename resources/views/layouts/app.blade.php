@@ -3,7 +3,23 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Boulangerie')</title>
+
+    {{-- ── PWA ── --}}
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#F97316">
+
+    {{-- iOS --}}
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Ma Boulangerie">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
+
+    {{-- Icône générique --}}
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/images/icon-512.png">
+
     <style>
         :root {
             --orange:      #F97316;
@@ -29,6 +45,7 @@
             --top-h:       64px;
             --radius:      14px;
             --radius-sm:   8px;
+            --sidebar-w:   248px;
         }
         * { box-sizing:border-box; margin:0; padding:0; }
         html { -webkit-text-size-adjust:100%; }
@@ -84,9 +101,78 @@
             .main-wrap { max-width: 520px; padding: 24px 0 8px; }
             .bottom-nav .nav-wrap { max-width: 520px; margin: 0 auto; }
         }
-        @media (min-width: 1024px) {
+        @media (min-width: 1024px) and (max-width: 1279px) {
             .main-wrap { max-width: 560px; }
             .bottom-nav .nav-wrap { max-width: 560px; }
+        }
+
+        /* ── Sidebar (desktop) ── */
+        .sidebar { display: none; }
+
+        @media (min-width: 1024px) {
+            body { padding-bottom: 0; }
+
+            .sidebar {
+                display: flex;
+                flex-direction: column;
+                position: fixed;
+                top: 0; left: 0; bottom: 0;
+                width: var(--sidebar-w);
+                background: var(--white);
+                border-right: 1px solid var(--border);
+                z-index: 150;
+            }
+            .sidebar-brand {
+                display: flex; align-items: center; gap: 10px;
+                padding: 20px 20px 18px;
+                border-bottom: 1px solid var(--border);
+                flex-shrink: 0;
+            }
+            .sidebar-icon {
+                width: 38px; height: 38px;
+                background: var(--orange-bg); border-radius: 10px;
+                display: flex; align-items: center; justify-content: center;
+                flex-shrink: 0;
+            }
+            .sidebar-boulangerie {
+                font-size: 13px; font-weight: 700; color: var(--orange);
+                line-height: 1.25; text-transform: uppercase; letter-spacing: .02em;
+            }
+            .sidebar-user { font-size: 12px; color: var(--text2); margin-top: 1px; }
+            .sidebar-nav {
+                flex: 1; overflow-y: auto;
+                padding: 12px 10px;
+            }
+            .sidebar-section-title {
+                font-size: 11px; font-weight: 700; color: var(--text2);
+                text-transform: uppercase; letter-spacing: .08em;
+                padding: 14px 12px 6px;
+            }
+            .sidebar-link {
+                display: flex; align-items: center; gap: 12px;
+                padding: 10px 12px; border-radius: 10px;
+                font-size: 14px; font-weight: 600; color: var(--text2);
+                margin-bottom: 2px; transition: background .12s, color .12s;
+            }
+            .sidebar-link svg { width: 20px; height: 20px; flex-shrink: 0; }
+            .sidebar-link:hover { background: var(--bg); color: var(--text); }
+            .sidebar-link.active { background: var(--orange-bg); color: var(--orange); }
+            .sidebar-divider { height: 1px; background: var(--border); margin: 8px 6px; }
+            .sidebar-footer {
+                padding: 10px; border-top: 1px solid var(--border); flex-shrink: 0;
+            }
+            .sidebar-footer .sidebar-link { color: var(--red); width: 100%; border: none; background: none; cursor: pointer; text-align: left; font-family: inherit; }
+
+            .topbar { margin-left: var(--sidebar-w); padding: 0 36px; justify-content: flex-end; }
+            .topbar-left { display: none; }
+            .support-banner { margin-left: var(--sidebar-w); }
+            .main-wrap { margin: 0; margin-left: var(--sidebar-w); max-width: 1120px; padding: 32px 36px 48px; }
+            .bottom-nav, .more-overlay { display: none; }
+
+            .dashboard-stat-grid { grid-template-columns: repeat(4, 1fr) !important; }
+        }
+        @media (min-width: 1280px) {
+            .main-wrap { max-width: 1280px; }
         }
 
         /* ── Flash messages ── */
@@ -313,22 +399,65 @@
         .nav-item.plus-btn .plus-circle svg { color: #fff; width: 22px; height: 22px; }
         .nav-item.plus-btn { color: var(--orange); gap: 2px; }
 
-        /* ── More overlay ── */
-        .more-overlay { display:none; position:fixed; inset:0; z-index:300; }
-        .more-overlay.open { display:block; }
-        .more-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); }
-        .more-sheet {
-            position: absolute; bottom: var(--nav-h); left: 0; right: 0;
-            background: var(--white);
-            border-radius: 22px 22px 0 0;
-            padding: 6px 0 16px;
-            max-width: 480px; margin: 0 auto;
+        /* ── Item "boulangerie" du sélecteur (identique mobile/desktop) ── */
+        .boulangerie-switch-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            width: 100%; padding: 12px 14px; border-radius: 10px;
+            font-size: 14px; font-weight: 600; color: var(--text);
+            border: none; background: none; cursor: pointer; text-align: left;
+            font-family: inherit; text-decoration: none; margin-bottom: 2px;
         }
-        @media (min-width: 768px) { .more-sheet { max-width: 520px; } }
-        @media (min-width: 1024px) { .more-sheet { max-width: 560px; } }
-        .more-handle {
-            width: 36px; height: 4px; background: var(--border);
-            border-radius: 2px; margin: 10px auto 16px;
+        .boulangerie-switch-item:hover { background: var(--bg); }
+        .boulangerie-switch-item-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .boulangerie-switch-item svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--text2); }
+        .boulangerie-switch-item.active {
+            background: var(--orange-bg); color: var(--orange);
+        }
+        .boulangerie-switch-item.active svg { color: var(--orange); }
+        .sidebar-nav .boulangerie-switch-item { padding-left: 12px; padding-right: 12px; }
+        .more-sheet-body .boulangerie-switch-item { padding: 12px 20px; }
+
+        /* ── More overlay (tiroir latéral gauche) ── */
+        .more-overlay {
+            position: fixed; inset: 0; z-index: 300;
+            visibility: hidden; pointer-events: none;
+            transition: visibility 0s linear .32s;
+        }
+        .more-overlay.open {
+            visibility: visible; pointer-events: auto;
+            transition-delay: 0s;
+        }
+        .more-backdrop {
+            position: absolute; inset: 0; background: rgba(0,0,0,.45);
+            opacity: 0; transition: opacity .32s ease;
+        }
+        .more-overlay.open .more-backdrop { opacity: 1; }
+        .more-sheet {
+            position: absolute; top: 0; left: 0; bottom: 0;
+            width: min(84%, 340px);
+            background: var(--white);
+            box-shadow: 6px 0 24px rgba(0,0,0,.16);
+            display: flex; flex-direction: column;
+            transform: translateX(-100%);
+            transition: transform .32s cubic-bezier(.22,1,.36,1);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .more-overlay.open .more-sheet { transform: translateX(0); }
+        .more-sheet-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 18px 14px; flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .more-sheet-title { font-size: 16px; font-weight: 700; color: var(--text); }
+        .more-close {
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: none; background: var(--bg); color: var(--text2); cursor: pointer;
+        }
+        .more-close svg { width: 18px; height: 18px; }
+        .more-sheet-body {
+            flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 6px 0 16px;
         }
         .more-item {
             display: flex; align-items: center; gap: 14px;
@@ -352,6 +481,16 @@
             position: absolute; left: 12px; top: 50%;
             transform: translateY(-50%);
             color: var(--text2); font-size: 16px; pointer-events: none;
+        }
+
+        /* ── Champ mot de passe avec bouton afficher/masquer ── */
+        .password-wrap { position: relative; }
+        .password-wrap .form-input { padding-right: 44px; }
+        .eye-btn {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none; cursor: pointer;
+            color: var(--text2); padding: 0; display: flex;
         }
 
         /* ── Helper utilities ── */
@@ -414,29 +553,317 @@
         /* Alert styles */
         .alert-danger  { background: var(--red-bg);   color: #991B1B; padding: 12px 14px; border-radius: var(--radius-sm); margin-bottom: 12px; font-size: 14px; }
         .alert-success { background: var(--green-bg); color: #065F46; padding: 12px 14px; border-radius: var(--radius-sm); margin-bottom: 12px; font-size: 14px; }
+
+        /* ── Cloche de notifications ── */
+        .bell-btn { position: relative; background: none; border: none; cursor: pointer; color: var(--text2); padding: 0; display: flex; }
+        .notif-badge {
+            display: none; position: absolute; top: -5px; right: -6px;
+            min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+            background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+            align-items: center; justify-content: center; line-height: 1;
+            box-shadow: 0 0 0 2px var(--white);
+        }
+
+        /* ── Panneau de notifications ── */
+        .notif-overlay {
+            position: fixed; inset: 0; z-index: 350;
+            visibility: hidden; pointer-events: none;
+            transition: visibility 0s linear .25s;
+        }
+        .notif-overlay.open { visibility: visible; pointer-events: auto; transition-delay: 0s; }
+        .notif-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.35); opacity: 0; transition: opacity .25s ease; }
+        .notif-overlay.open .notif-backdrop { opacity: 1; }
+        .notif-panel {
+            position: absolute; top: 0; right: 0; bottom: 0;
+            width: min(88%, 400px);
+            background: var(--white);
+            box-shadow: -6px 0 24px rgba(0,0,0,.16);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transform: translateX(100%);
+            transition: transform .32s cubic-bezier(.22,1,.36,1);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .notif-overlay.open .notif-panel { transform: translateX(0); }
+        .notif-header {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .notif-title { font-size: 16px; font-weight: 700; color: var(--text); }
+        .notif-subtitle { font-size: 12px; color: var(--orange); font-weight: 600; margin-top: 3px; }
+        .notif-tabs {
+            display: flex; gap: 6px; padding: 10px 16px;
+            overflow-x: auto; flex-shrink: 0; border-bottom: 1px solid var(--border);
+        }
+        .notif-tabs::-webkit-scrollbar { display: none; }
+        .notif-tab {
+            flex-shrink: 0; padding: 6px 13px; border-radius: 50px;
+            font-size: 12px; font-weight: 600; border: 1.5px solid var(--border);
+            background: var(--white); color: var(--text2); cursor: pointer; white-space: nowrap;
+            font-family: inherit;
+        }
+        .notif-tab.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+        .notif-toolbar { display: flex; gap: 16px; padding: 10px 16px; flex-shrink: 0; }
+        .notif-link-btn {
+            background: none; border: none; color: var(--orange); font-size: 12px;
+            font-weight: 700; cursor: pointer; padding: 0; font-family: inherit;
+        }
+        .notif-link-btn:hover { text-decoration: underline; }
+        .notif-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .notif-loading, .notif-empty { text-align: center; padding: 44px 16px; color: var(--text2); font-size: 13px; }
+        .notif-item { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item.read { opacity: .6; }
+        .notif-item-icon {
+            width: 36px; height: 36px; border-radius: 50%; background: var(--bg);
+            display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+        }
+        .notif-item-body { flex: 1; min-width: 0; }
+        .notif-item-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+        .notif-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--orange); flex-shrink: 0; }
+        .notif-item-desc { font-size: 13px; color: var(--text); margin-top: 2px; line-height: 1.4; }
+        .notif-item-meta { font-size: 11px; color: var(--text2); margin-top: 4px; }
+        .notif-item-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+        .notif-action-btn {
+            width: 26px; height: 26px; border-radius: 50%; border: none; background: var(--bg);
+            color: var(--text2); display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .notif-action-btn:hover { background: var(--border); }
+        .notif-read-btn:hover { color: var(--green); }
+        .notif-dismiss-btn:hover { color: var(--red); }
+        .notif-pagination {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px; border-top: 1px solid var(--border); flex-shrink: 0;
+        }
+        .notif-page-btn {
+            background: none; border: 1.5px solid var(--border); border-radius: 8px;
+            padding: 6px 11px; font-size: 12px; font-weight: 600; color: var(--text);
+            cursor: pointer; font-family: inherit;
+        }
+        .notif-page-btn:disabled { opacity: .4; cursor: default; }
+        .notif-page-info { font-size: 12px; color: var(--text2); }
     </style>
 </head>
 <body>
-    {{-- Topbar --}}
     @php
         $nomBoulangerie = auth()->user()?->boulangerie?->nom ?? 'Ma Boulangerie';
-        $userName = auth()->user()?->name ?? '';
+        $userName       = auth()->user()?->name ?? '';
+        $isSuperAdmin   = auth()->user()?->role?->nom === 'super_admin';
+        $userRoleSidebar = auth()->user()?->role?->nom;
+        $ownedBoulangeries = $userRoleSidebar === 'proprietaire'
+            ? auth()->user()->boulangeries()->orderBy('nom')->get()
+            : collect();
+        $activeBoulangerieId = auth()->user()?->boulangerie_id;
     @endphp
+
+    {{-- Sidebar (desktop uniquement) --}}
+    <aside class="sidebar">
+        <a href="{{ $isSuperAdmin ? route('super-admin.dashboard') : route('dashboard') }}" class="sidebar-brand">
+            <div class="sidebar-icon">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" style="width:24px;height:24px;object-fit:contain">
+            </div>
+            <div>
+                <div class="sidebar-boulangerie">{{ $nomBoulangerie }}</div>
+                <div class="sidebar-user">{{ $userName }}</div>
+            </div>
+        </a>
+
+        <nav class="sidebar-nav">
+            @if($isSuperAdmin)
+                <a href="{{ route('super-admin.dashboard') }}" class="sidebar-link {{ request()->routeIs('super-admin.dashboard') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Dashboard
+                </a>
+                <a href="{{ route('super-admin.boulangeries') }}" class="sidebar-link {{ request()->routeIs('super-admin.boulangeries*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    Boulangeries
+                </a>
+                <a href="{{ route('super-admin.utilisateurs') }}" class="sidebar-link {{ request()->routeIs('super-admin.utilisateurs') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Utilisateurs
+                </a>
+
+                <div class="sidebar-divider"></div>
+                <div class="sidebar-section-title">Système</div>
+
+                <a href="{{ route('super-admin.backups') }}" class="sidebar-link {{ request()->routeIs('super-admin.backups*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/></svg>
+                    Sauvegardes
+                </a>
+                <a href="{{ route('super-admin.activity-logs') }}" class="sidebar-link {{ request()->routeIs('super-admin.activity-logs') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                    Journal d'activité
+                </a>
+                <a href="{{ route('a-propos.index') }}" class="sidebar-link {{ request()->routeIs('a-propos.index') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    À propos
+                </a>
+            @else
+                <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Accueil
+                </a>
+                <a href="{{ route('matieres-premieres.index') }}" class="sidebar-link {{ request()->routeIs('matieres-premieres.*') || request()->routeIs('achats-matieres-premieres.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    Stock
+                </a>
+                <a href="{{ route('productions.index') }}" class="sidebar-link {{ request()->routeIs('productions.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                    Production
+                </a>
+                <a href="{{ route('livreurs.index') }}" class="sidebar-link {{ request()->routeIs('livreurs.*') || request()->routeIs('versements.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Livreurs
+                </a>
+                <a href="{{ route('clients-abonnes.index') }}" class="sidebar-link {{ request()->routeIs('clients-abonnes.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    Abonnés
+                </a>
+                <a href="{{ route('depenses.index') }}" class="sidebar-link {{ request()->routeIs('depenses.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Dépenses
+                </a>
+                <a href="{{ route('produits.index') }}" class="sidebar-link {{ request()->routeIs('produits.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    Produits
+                </a>
+
+                @if($userRoleSidebar === 'proprietaire')
+                    <div class="sidebar-divider"></div>
+                    <div class="sidebar-section-title">Propriétaire</div>
+
+                    <a href="{{ route('gerants.index') }}" class="sidebar-link {{ request()->routeIs('gerants.*') ? 'active' : '' }}">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        Gestion gérants
+                    </a>
+                    <a href="{{ route('bilan.index') }}" class="sidebar-link {{ request()->routeIs('bilan.*') ? 'active' : '' }}">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Bilan financier
+                    </a>
+                    <a href="{{ route('statistiques.index') }}" class="sidebar-link {{ request()->routeIs('statistiques.*') ? 'active' : '' }}">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Statistiques
+                    </a>
+                    <a href="{{ route('parametres.edit') }}" class="sidebar-link {{ request()->routeIs('parametres.*') ? 'active' : '' }}">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Paramètres
+                    </a>
+                    @if($ownedBoulangeries->count() > 1)
+                        <div class="sidebar-divider"></div>
+                        <div class="sidebar-section-title">Mes boulangeries</div>
+                        @foreach($ownedBoulangeries as $b)
+                            @include('partials.boulangerie-switch-item', ['b' => $b, 'activeBoulangerieId' => $activeBoulangerieId])
+                        @endforeach
+                    @endif
+
+                    <a href="{{ route('boulangeries.ajouter') }}" class="sidebar-link {{ request()->routeIs('boulangeries.ajouter') ? 'active' : '' }}">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        Ajouter une boulangerie
+                    </a>
+                @endif
+
+                <div class="sidebar-divider"></div>
+                <a href="{{ route('a-propos.index') }}" class="sidebar-link {{ request()->routeIs('a-propos.index') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    À propos
+                </a>
+            @endif
+        </nav>
+
+        <div class="sidebar-footer">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="sidebar-link">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Déconnexion
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    {{-- Topbar --}}
     <header class="topbar">
         <a href="{{ route('dashboard') }}" class="topbar-left">
-            <div class="topbar-icon">🥖</div>
+            <div class="topbar-icon">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" style="width:28px;height:28px;object-fit:contain">
+            </div>
             <div>
                 <div class="topbar-boulangerie">{{ $nomBoulangerie }}</div>
                 <div class="topbar-user">{{ $userName }}</div>
             </div>
         </a>
-        {{-- Bell icon --}}
-        <div style="color:var(--text2)">
-            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
-        </div>
+        {{-- Cloche de notifications --}}
+        @if($isSuperAdmin)
+            <div style="color:var(--text2)">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+        @else
+            <button type="button" class="bell-btn" onclick="openNotif()">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                <span class="notif-badge">0</span>
+            </button>
+        @endif
     </header>
+
+    {{-- Panneau de notifications --}}
+    @unless($isSuperAdmin)
+    <div class="notif-overlay" id="notifOverlay">
+        <div class="notif-backdrop" onclick="closeNotif()"></div>
+        <div class="notif-panel">
+            <div class="notif-header">
+                <div>
+                    <div class="notif-title">Activités</div>
+                    <div class="notif-subtitle" id="notifSubtitle">Chargement…</div>
+                </div>
+                <button type="button" class="more-close" onclick="closeNotif()">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="notif-tabs" id="notifTabs">
+                <button type="button" class="notif-tab active" data-cat="toutes" onclick="notifSetCategorie('toutes')">Toutes</button>
+                <button type="button" class="notif-tab" data-cat="vente" onclick="notifSetCategorie('vente')">Ventes</button>
+                <button type="button" class="notif-tab" data-cat="achat" onclick="notifSetCategorie('achat')">Achats</button>
+                <button type="button" class="notif-tab" data-cat="depense" onclick="notifSetCategorie('depense')">Dépenses</button>
+                <button type="button" class="notif-tab" data-cat="gerant" onclick="notifSetCategorie('gerant')">Gérants</button>
+            </div>
+            <div class="notif-toolbar">
+                <button type="button" class="notif-link-btn" onclick="notifToutLire()">Tout lire</button>
+                <button type="button" class="notif-link-btn" onclick="notifViderLues()">Vider lues</button>
+            </div>
+            <div class="notif-body" id="notifBody">
+                <div class="notif-loading">Chargement…</div>
+            </div>
+        </div>
+    </div>
+    @endunless
+
+    {{-- Bannière mode support (impersonation) --}}
+    @if(session('impersonator_id'))
+    <div class="support-banner" style="background:#1D4ED8;color:#fff;padding:10px 16px;text-align:center;
+                position:sticky;top:var(--top-h);z-index:99;
+                box-shadow:0 2px 8px rgba(0,0,0,.20)">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.85">
+            🔑 MODE SUPPORT ACTIVÉ
+        </div>
+        <div style="font-size:13px;font-weight:600;margin-top:2px">
+            Vous consultez : <strong>{{ auth()->user()?->boulangerie?->nom ?? '…' }}</strong>
+        </div>
+        <form method="POST" action="{{ route('super-admin.quitter') }}" style="margin-top:8px">
+            @csrf
+            <button type="submit"
+                    style="background:#fff;color:#1D4ED8;border:none;padding:6px 18px;
+                           border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">
+                ← Retour Super Admin
+            </button>
+        </form>
+    </div>
+    @endif
 
     {{-- Page content --}}
     <div class="main-wrap">
@@ -453,7 +880,106 @@
         @yield('content')
     </div>
 
-    {{-- Bottom navigation --}}
+    @if($isSuperAdmin)
+    {{-- ══ Navigation Super Admin ══ --}}
+    <nav class="bottom-nav">
+        <div class="nav-wrap">
+            <a href="{{ route('super-admin.dashboard') }}"
+               class="nav-item {{ request()->routeIs('super-admin.dashboard') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Dashboard
+            </a>
+
+            <a href="{{ route('super-admin.boulangeries') }}"
+               class="nav-item {{ request()->routeIs('super-admin.boulangeries*') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                Boulangeries
+            </a>
+
+            <a href="{{ route('super-admin.utilisateurs') }}"
+               class="nav-item {{ request()->routeIs('super-admin.utilisateurs') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Utilisateurs
+            </a>
+
+            <button class="nav-item plus-btn" onclick="openMore()" type="button">
+                <div class="plus-circle">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </div>
+                Plus
+            </button>
+        </div>
+    </nav>
+
+    {{-- More overlay Super Admin --}}
+    <div class="more-overlay" id="moreOverlay">
+        <div class="more-backdrop" onclick="closeMore()"></div>
+        <div class="more-sheet">
+            <div class="more-sheet-header">
+                <span class="more-sheet-title">Menu</span>
+                <button type="button" class="more-close" onclick="closeMore()">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="more-sheet-body">
+
+            <a href="{{ route('super-admin.backups') }}" class="more-item" onclick="closeMore()"
+               style="{{ request()->routeIs('super-admin.backups*') ? 'color:var(--orange)' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                </svg>
+                Sauvegardes
+            </a>
+
+            <a href="{{ route('super-admin.activity-logs') }}" class="more-item" onclick="closeMore()"
+               style="{{ request()->routeIs('super-admin.activity-logs') ? 'color:var(--orange)' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                </svg>
+                Journal d'activité
+            </a>
+
+            <a href="{{ route('a-propos.index') }}" class="more-item" onclick="closeMore()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                À propos
+            </a>
+
+            <div class="more-divider"></div>
+
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="more-item" style="color:var(--red)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Déconnexion
+                </button>
+            </form>
+            </div>
+        </div>
+    </div>
+
+    @else
+    {{-- ══ Navigation normale (propriétaire / gérant) ══ --}}
     <nav class="bottom-nav">
         <div class="nav-wrap">
             <a href="{{ route('dashboard') }}"
@@ -463,15 +989,6 @@
                           d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
                 Accueil
-            </a>
-
-            <a href="{{ route('matieres-premieres.index') }}"
-               class="nav-item {{ request()->routeIs('matieres-premieres.*') || request()->routeIs('achats-matieres-premieres.*') ? 'active' : '' }}">
-                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                </svg>
-                Stock
             </a>
 
             <a href="{{ route('productions.index') }}"
@@ -503,11 +1020,37 @@
         </div>
     </nav>
 
-    {{-- More overlay --}}
+    {{-- More overlay normal --}}
     <div class="more-overlay" id="moreOverlay">
         <div class="more-backdrop" onclick="closeMore()"></div>
         <div class="more-sheet">
-            <div class="more-handle"></div>
+            <div class="more-sheet-header">
+                <span class="more-sheet-title">Menu</span>
+                <button type="button" class="more-close" onclick="closeMore()">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="more-sheet-body">
+
+            <a href="{{ route('matieres-premieres.index') }}" class="more-item" onclick="closeMore()"
+               style="{{ request()->routeIs('matieres-premieres.*') || request()->routeIs('achats-matieres-premieres.*') ? 'color:var(--orange)' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+                Stock
+            </a>
+
+            <a href="{{ route('produits.index') }}" class="more-item" onclick="closeMore()"
+               style="{{ request()->routeIs('produits.*') ? 'color:var(--orange)' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                </svg>
+                Produits
+            </a>
 
             <a href="{{ route('clients-abonnes.index') }}" class="more-item" onclick="closeMore()">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -562,7 +1105,30 @@
                     </svg>
                     Paramètres
                 </a>
+
+                @if($ownedBoulangeries->count() > 1)
+                    <div class="more-divider"></div>
+                    <div class="more-section-title">Mes boulangeries</div>
+                    @foreach($ownedBoulangeries as $b)
+                        @include('partials.boulangerie-switch-item', ['b' => $b, 'activeBoulangerieId' => $activeBoulangerieId])
+                    @endforeach
+                @endif
+
+                <a href="{{ route('boulangeries.ajouter') }}" class="more-item" onclick="closeMore()">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Ajouter une boulangerie
+                </a>
             @endif
+
+            <a href="{{ route('a-propos.index') }}" class="more-item" onclick="closeMore()">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                À propos
+            </a>
 
             <div class="more-divider"></div>
 
@@ -576,13 +1142,127 @@
                     Déconnexion
                 </button>
             </form>
+            </div>
         </div>
     </div>
+    @endif
 
     <script>
         function openMore()  { document.getElementById('moreOverlay').classList.add('open'); }
         function closeMore() { document.getElementById('moreOverlay').classList.remove('open'); }
         document.querySelector('.more-backdrop')?.addEventListener('click', closeMore);
+
+        // Afficher / masquer un champ mot de passe
+        function togglePwd(inputId) {
+            var input = document.getElementById(inputId);
+            if (!input) return;
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // ── Notifications (absent pour le super admin) ──
+        if (document.getElementById('notifOverlay')) (function() {
+            var notifBaseUrl = "{{ url('/notifications') }}";
+            var notifPanelUrl = "{{ route('notifications.panel') }}";
+            var notifCountUrl = "{{ route('notifications.count') }}";
+            var state = { categorie: 'toutes', page: 1 };
+
+            function csrf() {
+                var meta = document.querySelector('meta[name="csrf-token"]');
+                return meta ? meta.getAttribute('content') : '';
+            }
+
+            function updateBadge(count) {
+                document.querySelectorAll('.notif-badge').forEach(function(b) {
+                    if (count > 0) {
+                        b.textContent = count > 99 ? '99+' : count;
+                        b.style.display = 'flex';
+                    } else {
+                        b.style.display = 'none';
+                    }
+                });
+                var subtitle = document.getElementById('notifSubtitle');
+                if (subtitle) {
+                    subtitle.textContent = count > 0 ? count + ' non lue' + (count > 1 ? 's' : '') : 'Tout est lu';
+                }
+            }
+
+            function load() {
+                var body = document.getElementById('notifBody');
+                if (!body) return;
+                body.innerHTML = '<div class="notif-loading">Chargement…</div>';
+                var url = notifPanelUrl + '?categorie=' + encodeURIComponent(state.categorie) + '&page=' + state.page;
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        body.innerHTML = data.html;
+                        updateBadge(data.unreadCount);
+                    })
+                    .catch(function() {
+                        body.innerHTML = '<div class="notif-empty">Erreur de chargement.</div>';
+                    });
+            }
+
+            function post(url) {
+                return fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf(), 'X-Requested-With': 'XMLHttpRequest' },
+                }).then(function(r) { return r.json(); });
+            }
+
+            window.openNotif = function() {
+                var overlay = document.getElementById('notifOverlay');
+                if (!overlay) return;
+                overlay.classList.add('open');
+                state.page = 1;
+                load();
+            };
+            window.closeNotif = function() {
+                var overlay = document.getElementById('notifOverlay');
+                if (overlay) overlay.classList.remove('open');
+            };
+            window.notifSetCategorie = function(cat) {
+                state.categorie = cat;
+                state.page = 1;
+                document.querySelectorAll('.notif-tab').forEach(function(t) {
+                    t.classList.toggle('active', t.dataset.cat === cat);
+                });
+                load();
+            };
+            window.notifLoadPage = function(page) {
+                state.page = page;
+                load();
+                document.getElementById('notifBody').scrollTop = 0;
+            };
+            window.notifMarkRead = function(id) {
+                post(notifBaseUrl + '/' + id + '/lire').then(function(data) {
+                    updateBadge(data.unreadCount);
+                    load();
+                });
+            };
+            window.notifDismiss = function(id) {
+                post(notifBaseUrl + '/' + id + '/masquer').then(function(data) {
+                    updateBadge(data.unreadCount);
+                    load();
+                });
+            };
+            window.notifToutLire = function() {
+                post(notifBaseUrl + '/tout-lire').then(function(data) {
+                    updateBadge(data.unreadCount);
+                    load();
+                });
+            };
+            window.notifViderLues = function() {
+                post(notifBaseUrl + '/vider-lues').then(function() {
+                    load();
+                });
+            };
+
+            // Badge initial au chargement de chaque page
+            fetch(notifCountUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) { updateBadge(data.count); })
+                .catch(function() {});
+        })();
 
         // Auto-dismiss success flash after 2 seconds
         (function() {
@@ -595,6 +1275,15 @@
                 }, 2000);
             }
         })();
+
+        // Empêche la molette de la souris de modifier un champ numérique
+        // (input[type=number]) quand il est focus — comportement natif du
+        // navigateur qui change silencieusement la valeur en scrollant la page.
+        document.addEventListener('wheel', function (e) {
+            if (document.activeElement && document.activeElement.type === 'number') {
+                document.activeElement.blur();
+            }
+        }, { passive: true });
 
         // Menus ··· : position:fixed pour échapper aux overflow:hidden et toujours apparaître au premier plan
         (function() {
@@ -648,6 +1337,16 @@
                 closeAllDetails(null);
             }, true);
         })();
+    </script>
+
+    {{-- ── Service Worker PWA ── --}}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .catch(function(err) { console.warn('SW:', err); });
+            });
+        }
     </script>
 </body>
 </html>

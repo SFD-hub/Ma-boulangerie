@@ -11,7 +11,7 @@
         <form method="POST" action="{{ route('productions.update', $production) }}">
             @csrf
             @method('PUT')
-            @include('productions._form', ['production' => $production])
+            @include('productions._form', ['production' => $production, 'produits' => $produits])
         </form>
     </div>
 

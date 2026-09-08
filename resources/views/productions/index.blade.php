@@ -34,9 +34,38 @@
         {{-- ── Carte dernière production ── --}}
         <div style="background:#FFFFFF;border-radius:18px;padding:18px 16px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:20px">
 
-            {{-- Date --}}
-            <div style="font-size:12px;color:#9CA3AF;font-weight:500;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #E5E7EB">
-                Dernière production — {{ $derniere->date_production->format('d/m/Y') }}
+            {{-- Date + menu ··· --}}
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #E5E7EB">
+                <div style="font-size:12px;color:#9CA3AF;font-weight:500">
+                    Dernière production — {{ $derniere->produit->nom ?? '—' }} · {{ $derniere->date_production->format('d/m/Y') }}
+                    <span style="color:#F97316;font-weight:600">· {{ $derniere->moment_icon }} {{ $derniere->moment }} ({{ $derniere->heure_enregistrement }})</span>
+                </div>
+                <details style="position:relative;flex-shrink:0">
+                    <summary style="list-style:none;cursor:pointer;color:#9CA3AF;padding:4px;font-size:20px;font-weight:700;letter-spacing:2px;line-height:1;user-select:none">
+                        ···
+                    </summary>
+                    <div style="position:absolute;right:0;top:28px;background:#FFFFFF;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.14);z-index:50;min-width:148px;overflow:hidden;border:1px solid #F3F4F6">
+                        <a href="{{ route('productions.edit', $derniere) }}"
+                           style="display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:14px;font-weight:500;color:#111827;text-decoration:none">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Modifier
+                        </a>
+                        <div style="height:1px;background:#F3F4F6"></div>
+                        <form method="POST" action="{{ route('productions.destroy', $derniere) }}"
+                              onsubmit="return confirm('Supprimer cette production ? Le stock sera restauré.')">
+                            @csrf @method('DELETE')
+                            <button type="submit"
+                                    style="display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:14px;font-weight:500;color:#EF4444;background:none;border:none;cursor:pointer;width:100%;text-align:left">
+                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                Supprimer
+                            </button>
+                        </form>
+                    </div>
+                </details>
             </div>
 
             {{-- Farine utilisée --}}
@@ -48,7 +77,7 @@
                     <span style="font-size:14px;font-weight:600;color:#F97316">Farine utilisée</span>
                 </div>
                 <div style="text-align:right;flex-shrink:0">
-                    <div style="font-size:20px;font-weight:800;color:#111827;line-height:1">{{ $derniere->nombre_sacs }}</div>
+                    <div style="font-size:20px;font-weight:800;color:#111827;line-height:1">{{ \App\Support\Nombre::qte($derniere->nombre_sacs) }}</div>
                     <div style="font-size:11px;color:#9CA3AF;margin-top:2px">sacs</div>
                 </div>
             </div>
@@ -62,7 +91,7 @@
                     <span style="font-size:14px;font-weight:600;color:#F97316">Levure utilisée</span>
                 </div>
                 <div style="text-align:right;flex-shrink:0">
-                    <div style="font-size:20px;font-weight:800;color:#111827;line-height:1">{{ $derniere->quantite_levure }}</div>
+                    <div style="font-size:20px;font-weight:800;color:#111827;line-height:1">{{ \App\Support\Nombre::qte($derniere->quantite_levure) }}</div>
                     <div style="font-size:11px;color:#9CA3AF;margin-top:2px">paquet{{ $derniere->quantite_levure > 1 ? 's' : '' }}</div>
                 </div>
             </div>
@@ -109,10 +138,11 @@
             @foreach($apercu as $prod)
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}">
                     <span style="font-size:14px;font-weight:600;color:#111827">
-                        {{ $prod->date_production->format('d/m/Y') }}
+                        {{ $prod->produit->nom ?? '—' }} · {{ $prod->date_production->format('d/m/Y') }}
+                        <span style="font-size:12px;font-weight:500;color:#9CA3AF">{{ $prod->moment_icon }} {{ $prod->heure_enregistrement }}</span>
                     </span>
                     <span style="font-size:13px;color:#6B7280">
-                        {{ $prod->nombre_sacs }} sac{{ $prod->nombre_sacs > 1 ? 's' : '' }}
+                        {{ \App\Support\Nombre::qte($prod->nombre_sacs) }} sac{{ $prod->nombre_sacs > 1 ? 's' : '' }}
                         &nbsp;–&nbsp;
                         {{ number_format($prod->nombre_pains_produits, 0, ',', ' ') }} pains
                     </span>

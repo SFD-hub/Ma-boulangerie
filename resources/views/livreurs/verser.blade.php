@@ -106,11 +106,11 @@
                                  data-has-versement="{{ $aDejaVersement ? 1 : 0 }}"
                                  data-reliquat-actuel="{{ $reliquatActuel }}"
                                  data-invendus-existants="{{ $invendusExist }}"
-                                 data-label="{{ $dist->date_distribution->format('d/m/Y') }} — {{ $dist->pains_attribues }} pains"
+                                 data-label="{{ $dist->produit->nom ?? '—' }} — {{ $dist->date_distribution->format('d/m/Y') }} — {{ $dist->pains_attribues }} pains"
                                  style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;{{ !$loop->last ? 'border-bottom:1px solid #E5E7EB;' : '' }}"
                                  onmouseover="this.style.background='#FFF7ED'" onmouseout="this.style.background='#FFFFFF'">
                                 <div style="flex:1;min-width:0">
-                                    <div style="font-size:14px;font-weight:700;color:#111827">{{ $dist->date_distribution->format('d/m/Y') }}</div>
+                                    <div style="font-size:14px;font-weight:700;color:#111827">{{ $dist->produit->nom ?? '—' }} · {{ $dist->date_distribution->format('d/m/Y') }}</div>
                                     <div style="font-size:12px;color:#6B7280;margin-top:2px">
                                         {{ $dist->pains_attribues }}&nbsp;pains
                                         @if($aDejaVersement)

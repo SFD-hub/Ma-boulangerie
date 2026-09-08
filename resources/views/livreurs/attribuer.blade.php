@@ -50,6 +50,24 @@
                        style="width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;font-size:15px;color:#111827;box-sizing:border-box;outline:none;-webkit-appearance:none">
             </div>
 
+            {{-- Produit --}}
+            <div style="margin-bottom:18px">
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Produit *</label>
+                <select name="produit_id" required
+                        style="width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;font-size:15px;color:#111827;box-sizing:border-box;outline:none">
+                    @foreach($produits as $produit)
+                        <option value="{{ $produit->id }}" {{ old('produit_id', $defaultProduitId) == $produit->id ? 'selected' : '' }}>
+                            {{ $produit->nom }}
+                        </option>
+                    @endforeach
+                </select>
+                @if($produits->isEmpty())
+                    <p style="margin:8px 0 0;font-size:12px;color:#EF4444">
+                        Aucun produit configuré. <a href="{{ route('produits.create') }}">Créez-en un</a> avant de continuer.
+                    </p>
+                @endif
+            </div>
+
             {{-- Nombre de pains --}}
             <div style="margin-bottom:18px">
                 <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Nombre de pains *</label>

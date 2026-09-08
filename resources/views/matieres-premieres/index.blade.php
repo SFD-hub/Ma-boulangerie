@@ -55,7 +55,7 @@
             <div style="text-align:right;flex-shrink:0">
                 @if($farine)
                     <div style="font-size:30px;font-weight:800;line-height:1;color:{{ $farine->stock_actuel <= $farine->seuil_alerte && $farine->seuil_alerte > 0 ? '#EF4444' : '#111827' }}">
-                        {{ $farine->stock_actuel }}
+                        {{ \App\Support\Nombre::qte($farine->stock_actuel) }}
                     </div>
                     <div style="font-size:12px;color:#9CA3AF;margin-top:4px">sacs</div>
                 @else
@@ -76,7 +76,7 @@
             <div style="text-align:right;flex-shrink:0">
                 @if($levure)
                     <div style="font-size:30px;font-weight:800;line-height:1;color:{{ $levure->stock_actuel <= $levure->seuil_alerte && $levure->seuil_alerte > 0 ? '#EF4444' : '#111827' }}">
-                        {{ $levure->stock_actuel }}
+                        {{ \App\Support\Nombre::qte($levure->stock_actuel) }}
                     </div>
                     <div style="font-size:12px;color:#9CA3AF;margin-top:4px">paquets</div>
                 @else
@@ -120,7 +120,7 @@
                             {{ $achat->matierePremiere->nom }}
                         </div>
                         <div style="font-size:13px;color:#6B7280;margin-top:2px">
-                            {{ $achat->quantite }}&nbsp;{{ $achat->matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets' }}
+                            {{ \App\Support\Nombre::qte($achat->quantite) }}&nbsp;{{ $achat->matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets' }}
                             &nbsp;–&nbsp;{{ number_format($achat->montant, 0, ',', ' ') }}&nbsp;FCFA
                         </div>
                         <div style="font-size:12px;color:#9CA3AF;margin-top:1px">

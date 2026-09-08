@@ -2,17 +2,16 @@
 
 namespace App\Models;
 
-use App\Models\CategorieProduit;
 use App\Models\ClientAbonne;
 use App\Models\Depense;
 use App\Models\Livreur;
 use App\Models\MatierePremiere;
 use App\Models\Produit;
 use App\Models\User;
-use App\Models\Vente;
 use App\Models\Production;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -21,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'adresse',
     'email',
     'prix_pain',
+    'suspendu',
     'statut_abonnement',
     'date_expiration_abonnement',
 ])]
@@ -30,6 +30,7 @@ class Boulangerie extends Model
     {
         return [
             'date_expiration_abonnement' => 'date',
+            'suspendu'                   => 'boolean',
         ];
     }
 
@@ -63,19 +64,18 @@ class Boulangerie extends Model
         return $this->hasMany(User::class);
     }
 
-    public function categoriesProduits(): HasMany
-    {
-        return $this->hasMany(CategorieProduit::class);
-    }
-
     public function produits(): HasMany
     {
         return $this->hasMany(Produit::class);
     }
 
-    public function ventes(): HasMany
+    /**
+     * Propriétaire(s) rattachés via la pivot (un compte propriétaire peut
+     * posséder plusieurs boulangeries). Relation inverse de User::boulangeries().
+     */
+    public function proprietaires(): BelongsToMany
     {
-        return $this->hasMany(Vente::class);
+        return $this->belongsToMany(User::class, 'boulangerie_proprietaire')->withTimestamps();
     }
 }
 

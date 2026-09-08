@@ -34,7 +34,11 @@
         </span>
     </div>
 
-    @php $distributions = $livreur->distributions->sortByDesc('date_distribution'); @endphp
+    @php
+        $distributions = $livreur->distributions->sortByDesc(
+            fn ($d) => $d->date_distribution->format('Y-m-d') . ' ' . $d->created_at->format('H:i:s')
+        );
+    @endphp
 
     @if($distributions->isEmpty())
 
@@ -66,8 +70,9 @@
                         {{-- Date + badge statut --}}
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
                             <span style="font-size:14px;font-weight:700;color:#111827">
-                                {{ $dist->date_distribution->format('d/m/Y') }}
+                                {{ $dist->produit->nom ?? '—' }} · {{ $dist->date_distribution->format('d/m/Y') }}
                             </span>
+                            <span style="font-size:11px;font-weight:600;color:#9CA3AF">{{ $dist->moment_icon }} {{ $dist->moment }} · {{ $dist->heure_enregistrement }}</span>
                             <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
                                 {{ $estReglee ? 'background:#ECFDF5;color:#059669' : 'background:#FFFBEB;color:#D97706' }}">
                                 {{ $estReglee ? 'Réglée' : 'En attente' }}

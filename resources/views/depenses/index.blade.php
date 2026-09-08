@@ -4,17 +4,6 @@
 
 @section('content')
 
-    @php
-        $icones = \App\Http\Controllers\DepenseController::CATEGORIES_ICONES;
-        $iconBg = [
-            'achat_farine' => '#FFF3E0',
-            'achat_levure' => '#FFF0F0',
-            'salaire'      => '#EFF6FF',
-            'transport'    => '#F5F3FF',
-            'entretien'    => '#F0FDF4',
-            'divers'       => '#F3F4F6',
-        ];
-    @endphp
 
     {{-- ── En-tête page ── --}}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
@@ -43,16 +32,9 @@
         {{-- ── Liste des dépenses récentes ── --}}
         <div style="background:#FFFFFF;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:12px">
             @foreach($depenses as $depense)
-                @php
-                    $icone = $icones[$depense->categorie] ?? '📌';
-                    $bg    = $iconBg[$depense->categorie] ?? '#F3F4F6';
-                @endphp
                 <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}">
 
-                    {{-- Icône --}}
-                    <div style="width:44px;height:44px;border-radius:11px;background:{{ $bg }};display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0">
-                        {{ $icone }}
-                    </div>
+                    <x-depense-icone :categorie="$depense->categorie" />
 
                     {{-- Libellé --}}
                     <div style="flex:1;min-width:0">

@@ -49,7 +49,10 @@
 
     {{-- ── Statistiques de la dernière distribution ── --}}
     @php
-        $derniereDist      = $livreur->distributions->sortByDesc('date_distribution')->first();
+        $distributionsTriees = $livreur->distributions->sortByDesc(
+            fn ($d) => $d->date_distribution->format('Y-m-d') . ' ' . $d->created_at->format('H:i:s')
+        );
+        $derniereDist      = $distributionsTriees->first();
         $aVersement        = $derniereDist?->versement !== null;
         $painsAujd         = $derniereDist ? $derniereDist->pains_attribues : 0;
         $montantAttendu    = $derniereDist ? (float) $derniereDist->montant_attendu : 0;
@@ -61,7 +64,8 @@
 
         @if($derniereDist)
             <div style="padding:14px 16px 0;font-size:12px;color:#9CA3AF;font-weight:500">
-                Dernière distribution — {{ $derniereDist->date_distribution->format('d/m/Y') }}
+                Dernière distribution — {{ $derniereDist->produit->nom ?? '—' }} · {{ $derniereDist->date_distribution->format('d/m/Y') }}
+                <span style="color:#F97316;font-weight:600">· {{ $derniereDist->moment_icon }} {{ $derniereDist->moment }} ({{ $derniereDist->heure_enregistrement }})</span>
             </div>
         @endif
 
@@ -180,7 +184,7 @@
            style="font-size:13px;font-weight:600;color:#F97316;text-decoration:none">Voir plus</a>
     </div>
 
-    @php $apercuDist = $livreur->distributions->sortByDesc('date_distribution')->take(3); @endphp
+    @php $apercuDist = $distributionsTriees->take(3); @endphp
 
     @if($apercuDist->isEmpty())
         <div style="text-align:center;padding:24px 0;color:#9CA3AF;font-size:14px">
@@ -192,7 +196,8 @@
                 <div style="padding:13px 16px;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB' }}">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
                         <span style="font-size:14px;font-weight:700;color:#111827">
-                            {{ $dist->date_distribution->format('d/m/Y') }}
+                            {{ $dist->produit->nom ?? '—' }} · {{ $dist->date_distribution->format('d/m/Y') }}
+                            <span style="font-size:12px;font-weight:600;color:#9CA3AF">{{ $dist->moment_icon }} {{ $dist->heure_enregistrement }}</span>
                         </span>
                         @php $distEstReglee = $dist->versement !== null || $dist->statut === 'reglee'; @endphp
                         <span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;

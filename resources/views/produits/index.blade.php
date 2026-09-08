@@ -2,90 +2,57 @@
 
 @section('title', 'Produits')
 
-@section('header')
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h1>Produits</h1>
-        <a href="{{ route('produits.create') }}" style="padding: 10px 16px; background: #0f766e; color: white; border-radius: 6px; text-decoration: none; font-weight: 700;">
-            + Ajouter un produit
-        </a>
-    </div>
-@endsection
-
 @section('content')
-    @if (session('success'))
-        <div style="background: #d4edda; border: 1px solid #28a745; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; color: #155724;">
-            {{ session('success') }}
-        </div>
-    @endif
 
-    @if (session('error'))
-        <div style="background: #fee; border: 1px solid #c33; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; color: #c33;">
-            {{ session('error') }}
-        </div>
-    @endif
+    <div class="section-actions">
+        <h1 class="section-title">Produits</h1>
+        <a href="{{ route('produits.create') }}" class="btn btn-primary btn-sm">+ Ajouter</a>
+    </div>
 
-    @if ($produits->isEmpty())
-        <p style="color: #667085; text-align: center; padding: 40px;">
-            Aucun produit trouvé. <a href="{{ route('produits.create') }}" style="color: #0f766e;">Créer un produit</a>
-        </p>
+    @if($produits->isEmpty())
+        <div class="card">
+            <div class="empty-state">
+                <p style="font-size:32px;margin-bottom:8px">🍞</p>
+                <p>Aucun produit enregistré.</p>
+                <a href="{{ route('produits.create') }}" class="btn btn-primary btn-sm" style="margin-top:14px">
+                    + Ajouter un produit
+                </a>
+            </div>
+        </div>
     @else
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 1px solid #d9dee7;">
-                        <th style="padding: 12px; text-align: left; font-weight: 700; color: #172033;">Nom</th>
-                        <th style="padding: 12px; text-align: left; font-weight: 700; color: #172033;">Catégorie</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 700; color: #172033;">Prix</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 700; color: #172033;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($produits as $produit)
-                        <tr style="border-bottom: 1px solid #d9dee7;">
-                            <td style="padding: 12px; color: #172033;">
-                                <a href="{{ route('produits.show', $produit) }}" style="color: #0f766e; text-decoration: none;">
-                                    {{ $produit->nom }}
-                                </a>
-                            </td>
-                            <td style="padding: 12px; color: #667085;">
-                                {{ $produit->categorieProduit->nom }}
-                            </td>
-                            <td style="padding: 12px; text-align: right; color: #172033;">
-                                {{ number_format($produit->prix, 2, ',', ' ') }} €
-                            </td>
-                            <td style="padding: 12px; text-align: right;">
-                                <a 
-                                    href="{{ route('produits.show', $produit) }}"
-                                    style="color: #0f766e; text-decoration: none; margin-right: 12px;"
-                                >
-                                    Voir
-                                </a>
-                                <a 
-                                    href="{{ route('produits.edit', $produit) }}"
-                                    style="color: #0f766e; text-decoration: none; margin-right: 12px;"
-                                >
-                                    Éditer
-                                </a>
-                                <form 
-                                    method="POST" 
-                                    action="{{ route('produits.destroy', $produit) }}"
-                                    style="display: inline;"
-                                    onsubmit="return confirm('Êtes-vous sûr ?');"
-                                >
-                                    @csrf
-                                    @method('DELETE')
-                                    <button 
-                                        type="submit"
-                                        style="background: none; border: none; color: #c33; cursor: pointer; text-decoration: none;"
-                                    >
-                                        Supprimer
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <div class="card">
+            @foreach($produits as $produit)
+                <div class="list-item">
+                    <div class="list-item-body">
+                        <div class="list-item-name">{{ $produit->nom }}</div>
+                    </div>
+                    <div class="list-item-right" style="display:flex;align-items:center;gap:10px">
+                        <span class="badge {{ $produit->actif ? 'badge-green' : 'badge-gray' }}">
+                            {{ $produit->actif ? 'Actif' : 'Inactif' }}
+                        </span>
+                        <a href="{{ route('produits.edit', $produit) }}"
+                           style="font-size:13px;font-weight:600;color:#0f766e;text-decoration:none">
+                            Modifier
+                        </a>
+                        @if($produit->actif)
+                            <form method="POST" action="{{ route('produits.desactiver', $produit) }}">
+                                @csrf @method('PATCH')
+                                <button type="submit" style="background:none;border:none;color:#c33;font-size:13px;font-weight:600;cursor:pointer;padding:0">
+                                    Désactiver
+                                </button>
+                            </form>
+                        @else
+                            <form method="POST" action="{{ route('produits.reactiver', $produit) }}">
+                                @csrf @method('PATCH')
+                                <button type="submit" style="background:none;border:none;color:#059669;font-size:13px;font-weight:600;cursor:pointer;padding:0">
+                                    Réactiver
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
         </div>
     @endif
+
 @endsection

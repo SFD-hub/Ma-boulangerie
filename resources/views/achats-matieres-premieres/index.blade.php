@@ -47,7 +47,7 @@
                             {{ $achat->matierePremiere->nom }}
                         </div>
                         <div style="font-size:13px;color:#6B7280;margin-top:2px">
-                            {{ $achat->quantite }}&nbsp;{{ $achat->matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets' }}
+                            {{ \App\Support\Nombre::qte($achat->quantite) }}&nbsp;{{ $achat->matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets' }}
                             &nbsp;–&nbsp;{{ number_format($achat->montant, 0, ',', ' ') }}&nbsp;FCFA
                         </div>
                         <div style="font-size:12px;color:#9CA3AF;margin-top:1px">

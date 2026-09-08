@@ -35,8 +35,8 @@
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Quantité * <span id="unitLabel" style="color:var(--text2);font-weight:400">(sacs / paquets)</span></label>
-                    <input class="form-input" type="number" name="quantite" min="1"
-                           value="{{ old('quantite') }}" placeholder="Ex: 10" required>
+                    <input class="form-input" type="number" name="quantite" min="0.5" step="0.5"
+                           value="{{ old('quantite') }}" placeholder="Ex: 5.5" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Prix total (FCFA) *</label>

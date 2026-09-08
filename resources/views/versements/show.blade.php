@@ -49,7 +49,7 @@
 
             <div style="margin-bottom: 24px;">
                 <p style="margin: 0 0 8px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Montant versé</p>
-                <p style="margin: 0; color: #172033; font-size: 20px; font-weight: 700;">{{ number_format($versement->montant_verse, 2, ',', ' ') }} €</p>
+                <p style="margin: 0; color: #172033; font-size: 20px; font-weight: 700;">{{ number_format($versement->montant_verse, 0, ',', ' ') }} FCFA</p>
             </div>
         </div>
 

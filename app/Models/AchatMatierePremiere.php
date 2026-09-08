@@ -22,7 +22,7 @@ class AchatMatierePremiere extends Model
     protected $casts = [
         'date_achat' => 'date',
         'montant' => 'decimal:2',
-        'quantite' => 'integer',
+        'quantite' => 'decimal:2',
     ];
 
     public function matierePremiere(): BelongsTo

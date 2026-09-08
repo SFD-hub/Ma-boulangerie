@@ -48,7 +48,7 @@
 
     <div>
         <label for="montant_verse" style="display: block; margin-bottom: 8px; font-weight: 700; color: #172033;">
-            Montant versé (€) *
+            Montant versé (FCFA) *
         </label>
         <input 
             type="number" 

@@ -126,7 +126,7 @@ class ClientAbonneController extends Controller
     public function facturesHistorique(ClientAbonne $clientAbonne): View
     {
         abort_if($clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
-        $factures = $clientAbonne->factures()->orderByDesc('annee')->orderByDesc('mois')->get();
+        $factures = $clientAbonne->factures()->with('paiementsFactures')->orderByDesc('annee')->orderByDesc('mois')->get();
         return view('clients-abonnes.factures-historique', compact('clientAbonne', 'factures'));
     }
 

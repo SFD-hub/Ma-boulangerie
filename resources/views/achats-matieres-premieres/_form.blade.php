@@ -34,15 +34,16 @@
 
     <div>
         <label for="quantite" style="display: block; margin-bottom: 8px; font-weight: 700; color: #172033;">
-            Quantité (unités) *
+            Quantité (unités) * <span style="font-weight:400;font-size:12px;color:#718096">(les demi-unités sont acceptées, ex: 5.5)</span>
         </label>
-        <input 
-            type="number" 
-            id="quantite" 
-            name="quantite" 
+        <input
+            type="number"
+            id="quantite"
+            name="quantite"
             value="{{ old('quantite', isset($achatMatierePremiere) ? $achatMatierePremiere->quantite : '') }}"
             placeholder="0"
-            min="1"
+            min="0.5"
+            step="0.5"
             style="width: 100%; padding: 10px 12px; border: 1px solid #d9dee7; border-radius: 6px; font-size: 14px; font-family: Arial, sans-serif;"
             required
         >
@@ -50,7 +51,7 @@
 
     <div>
         <label for="montant" style="display: block; margin-bottom: 8px; font-weight: 700; color: #172033;">
-            Montant (€) *
+            Montant (FCFA) *
         </label>
         <input 
             type="number" 

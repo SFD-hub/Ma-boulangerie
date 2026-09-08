@@ -5,31 +5,24 @@
 @section('content')
 
     {{-- ── En-tête ── --}}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
-        <div>
-            <div style="font-size:20px;font-weight:700;color:#111827;line-height:1.3">
-                Bonjour, {{ auth()->user()->name }} 👋
-            </div>
-            <div style="font-size:13px;color:#9CA3AF;margin-top:3px">
-                Aujourd'hui, {{ \Carbon\Carbon::today()->locale('fr')->isoFormat('DD MMMM YYYY') }}
-            </div>
+    <div style="margin-bottom:20px">
+        <div style="font-size:20px;font-weight:700;color:#111827;line-height:1.3">
+            Bonjour, {{ auth()->user()->name }} 👋
         </div>
-        <div style="width:38px;height:38px;background:#F9FAFB;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="18" height="18" fill="none" stroke="#9CA3AF" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-            </svg>
+        <div style="font-size:13px;color:#9CA3AF;margin-top:3px">
+            Aujourd'hui, {{ \Carbon\Carbon::today()->locale('fr')->isoFormat('DD MMMM YYYY') }}
         </div>
     </div>
 
     {{-- ── Alertes stock ── --}}
     @foreach($alertes as $alerte)
         <div class="alert-strip" style="margin-bottom:12px">
-            ⚠️ Stock {{ $alerte['nom'] }} faible : {{ $alerte['stock'] }} {{ $alerte['unite'] }} (seuil : {{ $alerte['seuil'] }})
+            ⚠️ Stock {{ $alerte['nom'] }} faible : {{ \App\Support\Nombre::qte($alerte['stock']) }} {{ $alerte['unite'] }} (seuil : {{ \App\Support\Nombre::qte($alerte['seuil']) }})
         </div>
     @endforeach
 
-    {{-- ── Cartes statistiques 2×2 ── --}}
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+    {{-- ── Cartes statistiques ── --}}
+    <div class="dashboard-stat-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
 
         {{-- Production du jour — fond vert --}}
         <div style="background:#D1FAE5;border-radius:18px;padding:18px 14px">
@@ -59,7 +52,7 @@
                 Stock Farine
             </div>
             <div style="font-size:34px;font-weight:800;line-height:1;color:{{ $farineStock <= $farineSeuil && $farineSeuil > 0 ? '#EF4444' : '#111827' }}">
-                {{ $farineStock }}
+                {{ \App\Support\Nombre::qte($farineStock) }}
             </div>
             <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">sacs</div>
         </div>
@@ -70,7 +63,7 @@
                 Stock Levure
             </div>
             <div style="font-size:34px;font-weight:800;line-height:1;color:{{ $levureStock <= $levureSeuil && $levureSeuil > 0 ? '#EF4444' : '#111827' }}">
-                {{ $levureStock }}
+                {{ \App\Support\Nombre::qte($levureStock) }}
             </div>
             <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">paquets</div>
         </div>
@@ -80,8 +73,12 @@
     {{-- ── Dernières activités ── --}}
     <div style="background:#FFFFFF;border-radius:18px;padding:18px 16px;box-shadow:0 1px 3px rgba(0,0,0,.07)">
 
-        <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:14px">
-            Dernières activités
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <span style="font-size:16px;font-weight:700;color:#111827">Dernières activités</span>
+            <a href="{{ route('dashboard.activites') }}"
+               style="font-size:13px;font-weight:600;color:#F97316;text-decoration:none">
+                Voir plus
+            </a>
         </div>
 
         @if(empty($activites))

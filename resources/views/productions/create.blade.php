@@ -14,7 +14,7 @@
         <div class="card-title">Nouvelle production</div>
         <form method="POST" action="{{ route('productions.store') }}">
             @csrf
-            @include('productions._form')
+            @include('productions._form', ['produits' => $produits, 'defaultProduitId' => $defaultProduitId])
         </form>
     </div>
 

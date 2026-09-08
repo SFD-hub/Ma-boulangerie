@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -35,6 +36,8 @@ class AuthenticatedSessionController extends Controller
         ];
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            Log::warning('Échec de connexion', ['login' => $login, 'ip' => $request->ip()]);
+
             return back()
                 ->withErrors(['login' => 'Identifiants incorrects.'])
                 ->onlyInput('login');
@@ -42,8 +45,24 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if (! auth()->user()->boulangerie_id) {
+        $user = auth()->user();
+        $user->update(['last_login_at' => now()]);
+
+        if ($user->role?->nom === 'super_admin') {
+            return redirect()->route('super-admin.dashboard');
+        }
+
+        if (! $user->boulangerie_id) {
             return redirect()->route('setup.boulangerie');
+        }
+
+        // Bloquer la connexion si la boulangerie est suspendue
+        if ($user->boulangerie?->suspendu) {
+            Auth::logout();
+            $request->session()->invalidate();
+            return back()
+                ->withErrors(['login' => 'Cette boulangerie est suspendue. Contactez le support.'])
+                ->onlyInput('login');
         }
 
         return redirect()->intended(route('dashboard'));

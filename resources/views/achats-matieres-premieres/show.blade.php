@@ -38,12 +38,12 @@
 
             <div style="margin-bottom: 24px;">
                 <p style="margin: 0 0 8px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Quantité</p>
-                <p style="margin: 0; color: #172033; font-size: 16px;">{{ $achatMatierePremiere->quantite }} unités</p>
+                <p style="margin: 0; color: #172033; font-size: 16px;">{{ \App\Support\Nombre::qte($achatMatierePremiere->quantite) }} unités</p>
             </div>
 
             <div style="margin-bottom: 24px;">
                 <p style="margin: 0 0 8px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Montant</p>
-                <p style="margin: 0; color: #172033; font-size: 16px; font-weight: 700;">{{ number_format($achatMatierePremiere->montant, 2, ',', ' ') }} €</p>
+                <p style="margin: 0; color: #172033; font-size: 16px; font-weight: 700;">{{ number_format($achatMatierePremiere->montant, 0, ',', ' ') }} FCFA</p>
             </div>
 
             <div style="margin-bottom: 24px;">

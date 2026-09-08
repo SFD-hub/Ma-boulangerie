@@ -36,6 +36,7 @@
             value="{{ old('stock_actuel', isset($matierePremiere) ? $matierePremiere->stock_actuel : '') }}"
             placeholder="0"
             min="0"
+            step="0.5"
             style="width: 100%; padding: 10px 12px; border: 1px solid #d9dee7; border-radius: 6px; font-size: 14px; font-family: Arial, sans-serif;"
             required
         >
@@ -52,6 +53,7 @@
             value="{{ old('seuil_alerte', isset($matierePremiere) ? $matierePremiere->seuil_alerte : '') }}"
             placeholder="0"
             min="0"
+            step="0.5"
             style="width: 100%; padding: 10px 12px; border: 1px solid #d9dee7; border-radius: 6px; font-size: 14px; font-family: Arial, sans-serif;"
             required
         >

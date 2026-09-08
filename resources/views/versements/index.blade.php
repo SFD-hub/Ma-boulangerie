@@ -51,7 +51,7 @@
                                 </a>
                             </td>
                             <td style="padding: 12px; text-align: right; color: #172033; font-weight: 700;">
-                                {{ number_format($versement->montant_verse, 2, ',', ' ') }} €
+                                {{ number_format($versement->montant_verse, 0, ',', ' ') }} FCFA
                             </td>
                             <td style="padding: 12px; text-align: right;">
                                 <a 
@@ -87,5 +87,38 @@
                 </tbody>
             </table>
         </div>
+
+        {{-- ── Pagination ── --}}
+        @if($versements->hasPages())
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 8px">
+
+                @if($versements->onFirstPage())
+                    <span style="font-size:14px;font-weight:600;color:#D1D5DB;padding:10px 16px;background:#F9FAFB;border-radius:10px">
+                        ← Précédent
+                    </span>
+                @else
+                    <a href="{{ $versements->previousPageUrl() }}"
+                       style="font-size:14px;font-weight:600;color:#0f766e;padding:10px 16px;background:#EFFAF8;border-radius:10px;text-decoration:none">
+                        ← Précédent
+                    </a>
+                @endif
+
+                <span style="font-size:13px;color:#9CA3AF;font-weight:500">
+                    Page {{ $versements->currentPage() }} / {{ $versements->lastPage() }}
+                </span>
+
+                @if($versements->hasMorePages())
+                    <a href="{{ $versements->nextPageUrl() }}"
+                       style="font-size:14px;font-weight:600;color:#0f766e;padding:10px 16px;background:#EFFAF8;border-radius:10px;text-decoration:none">
+                        Suivant →
+                    </a>
+                @else
+                    <span style="font-size:14px;font-weight:600;color:#D1D5DB;padding:10px 16px;background:#F9FAFB;border-radius:10px">
+                        Suivant →
+                    </span>
+                @endif
+
+            </div>
+        @endif
     @endif
 @endsection

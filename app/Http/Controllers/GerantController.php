@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -54,27 +55,34 @@ class GerantController extends Controller
             'boulangerie_id' => $boulangerie_id,
         ]);
 
+        ActivityLog::record(
+            'gerant_ajoute',
+            auth()->user()->name . ' a ajouté un gérant — ' . $validated['name'],
+            $boulangerie_id,
+            'gerant'
+        );
+
         return redirect()->route('gerants.index')
             ->with('success', 'Gérant créé avec succès.');
     }
 
     public function show(User $gerant): View
     {
-        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id || $gerant->role?->nom !== 'gerant', 403);
 
         return view('gerants.show', compact('gerant'));
     }
 
     public function edit(User $gerant): View
     {
-        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id || $gerant->role?->nom !== 'gerant', 403);
 
         return view('gerants.edit', compact('gerant'));
     }
 
     public function update(Request $request, User $gerant): RedirectResponse
     {
-        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id || $gerant->role?->nom !== 'gerant', 403);
 
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
@@ -100,7 +108,7 @@ class GerantController extends Controller
 
     public function destroy(User $gerant): RedirectResponse
     {
-        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id || $gerant->role?->nom !== 'gerant', 403);
 
         $gerant->delete();
 
@@ -110,14 +118,14 @@ class GerantController extends Controller
 
     public function desactiver(User $gerant): RedirectResponse
     {
-        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id || $gerant->role?->nom !== 'gerant', 403);
         $gerant->update(['actif' => false]);
         return redirect()->route('gerants.index')->with('success', 'Gérant désactivé.');
     }
 
     public function activer(User $gerant): RedirectResponse
     {
-        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id || $gerant->role?->nom !== 'gerant', 403);
         $gerant->update(['actif' => true]);
         return redirect()->route('gerants.index')->with('success', 'Gérant activé.');
     }

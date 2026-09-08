@@ -29,18 +29,20 @@ class MatierePremiereController extends Controller
     {
         $validated = $request->validate([
             'nom' => 'required|string|max:255|unique:matieres_premieres,nom,NULL,id,boulangerie_id,' . auth()->user()->boulangerie_id,
-            'stock_actuel' => 'required|integer|min:0',
-            'seuil_alerte' => 'required|integer|min:0',
+            'stock_actuel' => 'required|numeric|min:0|max:999999.99',
+            'seuil_alerte' => 'required|numeric|min:0|max:999999.99',
         ], [
             'nom.required' => 'Le nom de la matière première est obligatoire.',
             'nom.unique' => 'Cette matière première existe déjà.',
             'nom.max' => 'Le nom ne doit pas dépasser 255 caractères.',
             'stock_actuel.required' => 'Le stock actuel est obligatoire.',
-            'stock_actuel.integer' => 'Le stock doit être un nombre entier.',
+            'stock_actuel.numeric' => 'Le stock doit être un nombre (les demi-sacs sont acceptés).',
             'stock_actuel.min' => 'Le stock ne peut pas être négatif.',
+            'stock_actuel.max' => 'Le stock est trop élevé.',
             'seuil_alerte.required' => 'Le seuil d\'alerte est obligatoire.',
-            'seuil_alerte.integer' => 'Le seuil doit être un nombre entier.',
+            'seuil_alerte.numeric' => 'Le seuil doit être un nombre (les demi-sacs sont acceptés).',
             'seuil_alerte.min' => 'Le seuil ne peut pas être négatif.',
+            'seuil_alerte.max' => 'Le seuil est trop élevé.',
         ]);
 
         $boulangerie_id = auth()->user()->boulangerie_id;
@@ -63,25 +65,31 @@ class MatierePremiereController extends Controller
 
     public function edit(MatierePremiere $matierePremiere): View
     {
+        abort_if($matierePremiere->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
         return view('matieres-premieres.edit', compact('matierePremiere'));
     }
 
     public function update(Request $request, MatierePremiere $matierePremiere): RedirectResponse
     {
+        abort_if($matierePremiere->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
         $validated = $request->validate([
             'nom' => 'required|string|max:255|unique:matieres_premieres,nom,' . $matierePremiere->id . ',id,boulangerie_id,' . auth()->user()->boulangerie_id,
-            'stock_actuel' => 'required|integer|min:0',
-            'seuil_alerte' => 'required|integer|min:0',
+            'stock_actuel' => 'required|numeric|min:0|max:999999.99',
+            'seuil_alerte' => 'required|numeric|min:0|max:999999.99',
         ], [
             'nom.required' => 'Le nom de la matière première est obligatoire.',
             'nom.unique' => 'Cette matière première existe déjà.',
             'nom.max' => 'Le nom ne doit pas dépasser 255 caractères.',
             'stock_actuel.required' => 'Le stock actuel est obligatoire.',
-            'stock_actuel.integer' => 'Le stock doit être un nombre entier.',
+            'stock_actuel.numeric' => 'Le stock doit être un nombre (les demi-sacs sont acceptés).',
             'stock_actuel.min' => 'Le stock ne peut pas être négatif.',
+            'stock_actuel.max' => 'Le stock est trop élevé.',
             'seuil_alerte.required' => 'Le seuil d\'alerte est obligatoire.',
-            'seuil_alerte.integer' => 'Le seuil doit être un nombre entier.',
+            'seuil_alerte.numeric' => 'Le seuil doit être un nombre (les demi-sacs sont acceptés).',
             'seuil_alerte.min' => 'Le seuil ne peut pas être négatif.',
+            'seuil_alerte.max' => 'Le seuil est trop élevé.',
         ]);
 
         $matierePremiere->update([
@@ -96,6 +104,8 @@ class MatierePremiereController extends Controller
 
     public function destroy(MatierePremiere $matierePremiere): RedirectResponse
     {
+        abort_if($matierePremiere->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
         // Vérifier s'il y a des achats associés
         if ($matierePremiere->achats()->count() > 0) {
             return redirect()->route('matieres-premieres.index')

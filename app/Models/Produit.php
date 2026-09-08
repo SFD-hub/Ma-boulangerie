@@ -2,51 +2,50 @@
 
 namespace App\Models;
 
-use App\Models\DetailDistribution;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Produit extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'nom',
-        'description',
-        'prix',
-        'categorie_produit_id',
+        'actif',
         'boulangerie_id',
     ];
 
     protected $casts = [
-        'prix' => 'decimal:2',
+        'actif' => 'boolean',
     ];
-
-    public function categorieProduit(): BelongsTo
-    {
-        return $this->belongsTo(CategorieProduit::class);
-    }
 
     public function boulangerie(): BelongsTo
     {
         return $this->belongsTo(Boulangerie::class);
     }
 
-    public function stock(): HasOne
+    public function productions(): HasMany
     {
-        return $this->hasOne(Stock::class);
+        return $this->hasMany(Production::class);
     }
 
-    public function detailDistributions(): HasMany
+    public function distributions(): HasMany
     {
-        return $this->hasMany(DetailDistribution::class);
+        return $this->hasMany(Distribution::class);
     }
 
-    public function detailVentes(): HasMany
+    // Produit présélectionné dans les formulaires de production/attribution :
+    // "Pain" reste le cas d'usage habituel, les autres types sont un choix
+    // volontaire de l'utilisateur.
+    public static function defaultIdPour(int $boulangerie_id): ?int
     {
-        return $this->hasMany(DetailVente::class);
+        return static::where('boulangerie_id', $boulangerie_id)
+            ->where('actif', true)
+            ->orderByRaw("nom = 'Pain' desc")
+            ->orderBy('id')
+            ->value('id');
     }
 }

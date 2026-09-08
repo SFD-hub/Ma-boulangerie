@@ -92,7 +92,9 @@
 </head>
 <body>
     <div class="card">
-        <div class="brand-icon">🥖</div>
+        <div class="brand-icon">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo" style="width:44px;height:44px;object-fit:contain">
+        </div>
         <div class="brand-name">Ma Boulangerie</div>
         <div class="brand-sub">Bonjour {{ auth()->user()->name }},</div>
         <div class="brand-user">Configurez votre boulangerie pour commencer</div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Versement;
 use App\Models\Livreur;
 use Illuminate\Http\Request;
@@ -19,7 +20,8 @@ class VersementController extends Controller
         })
             ->with('livreur')
             ->orderBy('date_versement', 'desc')
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
 
         return view('versements.index', compact('versements'));
     }
@@ -64,6 +66,13 @@ class VersementController extends Controller
 
         Versement::create($validated);
 
+        ActivityLog::record(
+            'versement_enregistre',
+            auth()->user()->name . ' a enregistré un versement de ' . number_format($validated['montant_verse'], 0, ',', ' ') . ' FCFA — ' . $livreur->prenom . ' ' . $livreur->nom,
+            $boulangerie_id,
+            'paiement'
+        );
+
         return redirect()->route('versements.index')
             ->with('success', 'Versement créé avec succès.');
     }
@@ -71,6 +80,7 @@ class VersementController extends Controller
     public function show(Versement $versement): View
     {
         $versement->load('livreur');
+        abort_if($versement->livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         return view('versements.show', compact('versement'));
     }
@@ -78,6 +88,8 @@ class VersementController extends Controller
     public function edit(Versement $versement): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($versement->livreur->boulangerie_id !== $boulangerie_id, 403);
+
         $livreurs = Livreur::where('boulangerie_id', $boulangerie_id)
             ->where('actif', true)
             ->orderBy('nom')
@@ -105,6 +117,7 @@ class VersementController extends Controller
         ]);
 
         $boulangerie_id = auth()->user()->boulangerie_id;
+        abort_if($versement->livreur->boulangerie_id !== $boulangerie_id, 403);
 
         // Vérifier que le livreur appartient à la boulangerie
         $livreur = Livreur::find($validated['livreur_id']);
@@ -121,6 +134,8 @@ class VersementController extends Controller
 
     public function destroy(Versement $versement): RedirectResponse
     {
+        abort_if($versement->livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
         $versement->delete();
 
         return redirect()->route('versements.index')

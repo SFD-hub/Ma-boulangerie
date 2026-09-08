@@ -17,12 +17,16 @@
         </div>
 
         <div class="detail-row">
+            <span class="detail-row-label">Produit</span>
+            <span class="detail-row-value">{{ $production->produit->nom ?? '—' }}</span>
+        </div>
+        <div class="detail-row">
             <span class="detail-row-label">Sacs de farine</span>
-            <span class="detail-row-value">{{ $production->nombre_sacs }} sacs ({{ $production->quantite_farine }} kg)</span>
+            <span class="detail-row-value">{{ \App\Support\Nombre::qte($production->nombre_sacs) }} sacs ({{ \App\Support\Nombre::qte($production->quantite_farine) }} kg)</span>
         </div>
         <div class="detail-row">
             <span class="detail-row-label">Paquets de levure</span>
-            <span class="detail-row-value">{{ $production->quantite_levure }} kg</span>
+            <span class="detail-row-value">{{ \App\Support\Nombre::qte($production->quantite_levure) }} kg</span>
         </div>
         <div class="detail-row">
             <span class="detail-row-label">Pains produits</span>

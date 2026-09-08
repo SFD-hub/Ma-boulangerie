@@ -2,18 +2,19 @@
 
 namespace App\Models;
 
+use App\Traits\HasMoment;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Distribution extends Model
 {
-    use HasFactory;
+    use HasFactory, HasMoment;
 
     protected $fillable = [
         'livreur_id',
+        'produit_id',
         'date_distribution',
         'montant_attendu',
         'nombre_pains',
@@ -37,9 +38,9 @@ class Distribution extends Model
         return $this->belongsTo(Livreur::class);
     }
 
-    public function detailDistributions(): HasMany
+    public function produit(): BelongsTo
     {
-        return $this->hasMany(DetailDistribution::class);
+        return $this->belongsTo(Produit::class);
     }
 
     public function versement(): HasOne
@@ -55,29 +56,16 @@ class Distribution extends Model
 
     public function getPainsAttribuesAttribute(): int
     {
-        if ($this->nombre_pains !== null) {
-            return $this->nombre_pains;
-        }
-        return (int) $this->detailDistributions->sum('quantite_attribuee');
+        return (int) $this->nombre_pains;
     }
 
     public function getInvendusAttribute(): int
     {
-        if ($this->nombre_invendus !== null) {
-            return $this->nombre_invendus;
-        }
-        return (int) $this->detailDistributions->sum('quantite_retournee');
+        return (int) $this->nombre_invendus;
     }
 
     public function getPainsVendusAttribute(): int
     {
         return max(0, $this->pains_attribues - $this->invendus);
-    }
-
-    public function getMontantCalculeAttribute(): float
-    {
-        return (float) $this->detailDistributions->sum(
-            fn ($d) => max(0, $d->quantite_attribuee - $d->quantite_retournee) * ($d->produit->prix ?? 0)
-        );
     }
 }

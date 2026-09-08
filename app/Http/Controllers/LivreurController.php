@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Distribution;
 use App\Models\Livreur;
+use App\Models\Produit;
 use App\Models\Versement;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class LivreurController extends Controller
 {
@@ -54,7 +56,7 @@ class LivreurController extends Controller
     {
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
-        $livreur->load(['distributions.versement']);
+        $livreur->load(['distributions.versement', 'distributions.produit']);
 
         // Distributions avec reliquat > 0 : peuvent recevoir un versement (supplémentaire)
         $distributionsNonReglees = $livreur->distributions
@@ -112,13 +114,18 @@ class LivreurController extends Controller
     {
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
         $prixPain = auth()->user()->boulangerie?->prix_pain ?? 0;
-        return view('livreurs.attribuer', compact('livreur', 'prixPain'));
+        $produits = Produit::where('boulangerie_id', $livreur->boulangerie_id)
+            ->where('actif', true)
+            ->orderBy('nom')
+            ->get();
+        $defaultProduitId = Produit::defaultIdPour($livreur->boulangerie_id);
+        return view('livreurs.attribuer', compact('livreur', 'prixPain', 'produits', 'defaultProduitId'));
     }
 
     public function verserForm(Livreur $livreur): View
     {
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
-        $livreur->load(['distributions.versement']);
+        $livreur->load(['distributions.versement', 'distributions.produit']);
 
         // Distributions avec reliquat > 0 : peuvent recevoir un versement (même si partiel déjà)
         $distributionsNonReglees = $livreur->distributions
@@ -138,7 +145,7 @@ class LivreurController extends Controller
     public function distributionsHistorique(Livreur $livreur): View
     {
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
-        $livreur->load(['distributions.versement']);
+        $livreur->load(['distributions.versement', 'distributions.produit']);
 
         // Reliquat total en attente
         $reliquatTotalEnAttente = (float) $livreur->distributions->sum('reliquat');
@@ -153,10 +160,12 @@ class LivreurController extends Controller
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $validated = $request->validate([
-            'date_distribution' => 'required|date|before_or_equal:today',
-            'nombre_pains'      => 'required|integer|min:1',
-            'prix_pain'         => 'required|integer|min:1',
+            'produit_id'         => ['required', Rule::exists('produits', 'id')->where('boulangerie_id', $livreur->boulangerie_id)],
+            'date_distribution'  => 'required|date|before_or_equal:today',
+            'nombre_pains'       => 'required|integer|min:1',
+            'prix_pain'          => 'required|integer|min:1',
         ], [
+            'produit_id.required'               => 'Le produit est obligatoire.',
             'date_distribution.required'        => 'La date est obligatoire.',
             'date_distribution.before_or_equal' => 'La date ne peut pas être dans le futur.',
             'nombre_pains.required'             => 'Le nombre de pains est obligatoire.',
@@ -169,6 +178,7 @@ class LivreurController extends Controller
 
         Distribution::create([
             'livreur_id'        => $livreur->id,
+            'produit_id'        => $validated['produit_id'],
             'date_distribution' => $validated['date_distribution'],
             'nombre_pains'      => $validated['nombre_pains'],
             'prix_pain'         => $validated['prix_pain'],
@@ -198,31 +208,34 @@ class LivreurController extends Controller
             'montant_verse.min'        => 'Le montant versé doit être supérieur à 0.',
         ]);
 
-        $distribution = Distribution::findOrFail($validated['distribution_id']);
-        abort_if($distribution->livreur_id !== $livreur->id, 403);
-
-        // Seules les distributions avec reliquat > 0 peuvent recevoir un versement
-        if ($distribution->estRegle()) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Cette distribution est déjà réglée (reliquat nul).');
-        }
-
-        $painsAttribues = $distribution->pains_attribues;
-        if ($validated['nombre_invendus'] > $painsAttribues) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Les invendus (' . $validated['nombre_invendus'] . ') ne peuvent pas dépasser les pains attribués (' . $painsAttribues . ').');
-        }
-
-        $estPremierVersement = !$distribution->versement()->exists();
+        $distributionRef = Distribution::findOrFail($validated['distribution_id']);
+        abort_if($distributionRef->livreur_id !== $livreur->id, 403);
 
         // Utiliser le prix enregistré dans la distribution, jamais le prix global
-        $prixPain = $distribution->prix_pain
+        $prixPain = $distributionRef->prix_pain
             ?? auth()->user()->boulangerie?->prix_pain
             ?? 0;
 
-        DB::transaction(function () use ($validated, $distribution, $livreur, $prixPain, $estPremierVersement) {
+        $resultat = DB::transaction(function () use ($validated, $distributionRef, $livreur, $prixPain) {
+            // Verrouille la distribution ciblée ET toutes les distributions du
+            // livreur ayant un reliquat, avant toute lecture utilisée pour le
+            // calcul — deux versements simultanés pour le même livreur ne
+            // peuvent plus lire le même reliquat ni appliquer le même surplus
+            // deux fois.
+            $distribution = Distribution::where('id', $distributionRef->id)->lockForUpdate()->firstOrFail();
+
+            // Revérifié après verrouillage : peut avoir changé entre l'affichage
+            // du formulaire et l'enregistrement (un autre versement concurrent).
+            if ($distribution->estRegle()) {
+                return ['ok' => false, 'message' => 'Cette distribution est déjà réglée (reliquat nul).'];
+            }
+
+            $painsAttribues = $distribution->pains_attribues;
+            if ($validated['nombre_invendus'] > $painsAttribues) {
+                return ['ok' => false, 'message' => 'Les invendus (' . $validated['nombre_invendus'] . ') ne peuvent pas dépasser les pains attribués (' . $painsAttribues . ').'];
+            }
+
+            $estPremierVersement = !$distribution->versement()->exists();
             $montantVerse = (float) $validated['montant_verse'];
 
             if ($estPremierVersement) {
@@ -266,6 +279,7 @@ class LivreurController extends Controller
                     ->where('reliquat', '>', 0)
                     ->orderBy('date_distribution', 'asc')
                     ->orderBy('id', 'asc')
+                    ->lockForUpdate()
                     ->get();
 
                 foreach ($distribsAvecReliquat as $ancienne) {
@@ -284,7 +298,15 @@ class LivreurController extends Controller
                     $surplus -= $applied;
                 }
             }
+
+            return ['ok' => true];
         });
+
+        if (!$resultat['ok']) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $resultat['message']);
+        }
 
         return redirect()->route('livreurs.show', $livreur)
             ->with('success', 'Versement enregistré.');
