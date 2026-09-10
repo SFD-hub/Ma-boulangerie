@@ -1,65 +1,40 @@
 @extends('layouts.app')
 
-@section('title', 'Paramètres')
+@section('title', 'Mon compte')
+
+@section('header')
+    <h1>Mon compte</h1>
+@endsection
 
 @section('content')
 
-    <h1 class="section-title" style="margin-bottom:16px">Paramètres</h1>
-
-    @if($errors->any())
-        <div class="alert-danger">
-            @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach
-        </div>
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
     <div class="card">
-        <div class="card-title">Informations de la boulangerie</div>
-
-        <form method="POST" action="{{ route('parametres.update') }}">
-            @csrf @method('PUT')
-
-            <div class="form-group">
-                <label class="form-label">Nom de la boulangerie *</label>
-                <input class="form-input" type="text" name="nom"
-                       value="{{ old('nom', $boulangerie->nom) }}"
-                       placeholder="Ma Boulangerie" required autofocus>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Téléphone</label>
-                <input class="form-input" type="text" name="telephone"
-                       value="{{ old('telephone', $boulangerie->telephone) }}"
-                       placeholder="77 000 00 00">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Adresse</label>
-                <input class="form-input" type="text" name="adresse"
-                       value="{{ old('adresse', $boulangerie->adresse) }}"
-                       placeholder="Dakar, Sénégal">
-            </div>
-
-<button type="submit" class="btn btn-primary btn-full">Enregistrer</button>
-        </form>
-    </div>
-
-    {{-- Compte utilisateur --}}
-    <div class="card">
-        <div class="card-title">Mon compte</div>
-
         <form method="POST" action="{{ route('profil.update') }}">
-            @csrf @method('PUT')
+            @csrf
+            @method('PUT')
+
+            @if($errors->any())
+                <div class="alert alert-danger" style="margin-bottom:12px">
+                    @foreach($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
+                </div>
+            @endif
 
             <div class="form-group">
                 <label class="form-label">Nom complet *</label>
                 <input class="form-input" type="text" name="name"
-                       value="{{ old('name', auth()->user()->name) }}" required>
+                       value="{{ old('name', $user->name) }}" required>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Numéro de téléphone *</label>
                 <input class="form-input" type="text" name="telephone"
-                       value="{{ old('telephone', auth()->user()->telephone) }}" required>
+                       value="{{ old('telephone', $user->telephone) }}" required>
             </div>
 
             <div class="form-group" style="margin-top:20px;padding-top:16px;border-top:1px solid #E5E7EB">
@@ -101,7 +76,9 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-full">Enregistrer</button>
+            <div style="display:flex;gap:10px;margin-top:20px">
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
         </form>
     </div>
 

@@ -7,7 +7,7 @@
     {{-- ── En-tête ── --}}
     <div style="margin-bottom:20px">
         <div style="font-size:20px;font-weight:700;color:#111827;line-height:1.3">
-            Bonjour, {{ auth()->user()->name }} 👋
+            {{ now()->hour < 12 ? 'Bonjour' : 'Bonsoir' }}, {{ auth()->user()->name }} 👋
         </div>
         <div style="font-size:13px;color:#9CA3AF;margin-top:3px">
             Aujourd'hui, {{ \Carbon\Carbon::today()->locale('fr')->isoFormat('DD MMMM YYYY') }}

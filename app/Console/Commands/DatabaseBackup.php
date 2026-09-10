@@ -9,8 +9,6 @@ class DatabaseBackup extends Command
     protected $signature   = 'backup:database';
     protected $description = 'Sauvegarde la base de données MySQL dans storage/app/backups';
 
-    private const MAX_BACKUPS = 30;
-
     public function handle(): int
     {
         $config = config('database.connections.mysql');
@@ -84,15 +82,16 @@ class DatabaseBackup extends Command
     private function pruneOldBackups(string $dir): void
     {
         $files = glob($dir . DIRECTORY_SEPARATOR . 'backup_*.sql') ?: [];
+        $keep  = config('backup.keep', 30);
 
-        if (count($files) <= self::MAX_BACKUPS) {
+        if (count($files) <= $keep) {
             return;
         }
 
         // Du plus ancien au plus récent
         usort($files, fn ($a, $b) => filemtime($a) <=> filemtime($b));
 
-        $toDelete = array_slice($files, 0, count($files) - self::MAX_BACKUPS);
+        $toDelete = array_slice($files, 0, count($files) - $keep);
 
         foreach ($toDelete as $file) {
             @unlink($file);

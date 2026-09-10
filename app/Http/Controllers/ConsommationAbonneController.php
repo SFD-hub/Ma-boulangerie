@@ -55,7 +55,7 @@ class ConsommationAbonneController extends Controller
 
         // Vérifier que le client appartient à la boulangerie
         $client = ClientAbonne::find($validated['client_abonne_id']);
-        if ($client->boulangerie_id !== $boulangerie_id) {
+        if (!$client || $client->boulangerie_id !== $boulangerie_id) {
             return redirect()->back()
                 ->with('error', 'Client invalide.');
         }
@@ -79,7 +79,7 @@ class ConsommationAbonneController extends Controller
 
     public function show(ConsommationAbonne $consommationAbonne): View
     {
-        abort_if($consommationAbonne->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if(!$consommationAbonne->clientAbonne || $consommationAbonne->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         return view('consommations-abonnes.show', compact('consommationAbonne'));
     }
@@ -87,7 +87,7 @@ class ConsommationAbonneController extends Controller
     public function edit(ConsommationAbonne $consommationAbonne): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($consommationAbonne->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$consommationAbonne->clientAbonne || $consommationAbonne->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         $clients = ClientAbonne::where('boulangerie_id', $boulangerie_id)
             ->where('actif', true)
@@ -114,11 +114,11 @@ class ConsommationAbonneController extends Controller
         ]);
 
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($consommationAbonne->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$consommationAbonne->clientAbonne || $consommationAbonne->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         // Vérifier que le client appartient à la boulangerie
         $client = ClientAbonne::find($validated['client_abonne_id']);
-        if ($client->boulangerie_id !== $boulangerie_id) {
+        if (!$client || $client->boulangerie_id !== $boulangerie_id) {
             return redirect()->back()
                 ->with('error', 'Client invalide.');
         }
@@ -135,7 +135,7 @@ class ConsommationAbonneController extends Controller
 
     public function destroy(ConsommationAbonne $consommationAbonne): RedirectResponse
     {
-        abort_if($consommationAbonne->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if(!$consommationAbonne->clientAbonne || $consommationAbonne->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $clientId = $consommationAbonne->client_abonne_id;
         $consommationAbonne->delete();

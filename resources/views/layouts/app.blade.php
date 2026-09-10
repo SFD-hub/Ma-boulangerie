@@ -763,6 +763,13 @@
                 @endif
 
                 <div class="sidebar-divider"></div>
+                @unless($userRoleSidebar === 'proprietaire')
+                    {{-- Pour le propriétaire, "Mon compte" est intégré dans Paramètres --}}
+                    <a href="{{ route('profil.edit') }}" class="sidebar-link {{ request()->routeIs('profil.edit') ? 'active' : '' }}">
+                        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        Mon compte
+                    </a>
+                @endunless
                 <a href="{{ route('a-propos.index') }}" class="sidebar-link {{ request()->routeIs('a-propos.index') ? 'active' : '' }}">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     À propos
@@ -1121,6 +1128,18 @@
                     Ajouter une boulangerie
                 </a>
             @endif
+
+            @unless($userRole === 'proprietaire')
+                {{-- Pour le propriétaire, "Mon compte" est intégré dans Paramètres --}}
+                <a href="{{ route('profil.edit') }}" class="more-item" onclick="closeMore()"
+                   style="{{ request()->routeIs('profil.edit') ? 'color:var(--orange)' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Mon compte
+                </a>
+            @endunless
 
             <a href="{{ route('a-propos.index') }}" class="more-item" onclick="closeMore()">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

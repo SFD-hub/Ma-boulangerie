@@ -141,20 +141,14 @@
         >
     </div>
 
-    <div>
-        <label for="statut" style="display: block; margin-bottom: 8px; font-weight: 700; color: #172033;">
-            Statut *
-        </label>
-        <select
-            id="statut"
-            name="statut"
-            style="width: 100%; padding: 10px 12px; border: 1px solid #d9dee7; border-radius: 6px; font-size: 14px;"
-            required
-        >
-            <option value="impayee" {{ old('statut', isset($facture) ? $facture->statut : 'impayee') == 'impayee' ? 'selected' : '' }}>Impayée</option>
-            <option value="payee" {{ old('statut', isset($facture) ? $facture->statut : '') == 'payee' ? 'selected' : '' }}>Payée</option>
-        </select>
-    </div>
+    @if(isset($facture))
+        <div>
+            <p style="margin:0 0 8px;font-weight:700;color:#172033">Statut</p>
+            <p style="margin:0;font-size:13px;color:#667085">
+                Calculé automatiquement à partir des paiements enregistrés — non modifiable ici.
+            </p>
+        </div>
+    @endif
 
     <div style="display: flex; gap: 12px;">
         <button type="submit" style="padding: 10px 16px; background: #0f766e; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;">

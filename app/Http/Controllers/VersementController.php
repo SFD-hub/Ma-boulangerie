@@ -59,7 +59,7 @@ class VersementController extends Controller
 
         // Vérifier que le livreur appartient à la boulangerie
         $livreur = Livreur::find($validated['livreur_id']);
-        if ($livreur->boulangerie_id !== $boulangerie_id) {
+        if (!$livreur || $livreur->boulangerie_id !== $boulangerie_id) {
             return redirect()->back()
                 ->with('error', 'Livreur invalide.');
         }
@@ -80,7 +80,7 @@ class VersementController extends Controller
     public function show(Versement $versement): View
     {
         $versement->load('livreur');
-        abort_if($versement->livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if(!$versement->livreur || $versement->livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         return view('versements.show', compact('versement'));
     }
@@ -88,7 +88,7 @@ class VersementController extends Controller
     public function edit(Versement $versement): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($versement->livreur->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$versement->livreur || $versement->livreur->boulangerie_id !== $boulangerie_id, 403);
 
         $livreurs = Livreur::where('boulangerie_id', $boulangerie_id)
             ->where('actif', true)
@@ -117,11 +117,11 @@ class VersementController extends Controller
         ]);
 
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($versement->livreur->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$versement->livreur || $versement->livreur->boulangerie_id !== $boulangerie_id, 403);
 
         // Vérifier que le livreur appartient à la boulangerie
         $livreur = Livreur::find($validated['livreur_id']);
-        if ($livreur->boulangerie_id !== $boulangerie_id) {
+        if (!$livreur || $livreur->boulangerie_id !== $boulangerie_id) {
             return redirect()->back()
                 ->with('error', 'Livreur invalide.');
         }
@@ -134,7 +134,7 @@ class VersementController extends Controller
 
     public function destroy(Versement $versement): RedirectResponse
     {
-        abort_if($versement->livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if(!$versement->livreur || $versement->livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $versement->delete();
 

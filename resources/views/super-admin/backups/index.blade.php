@@ -20,9 +20,9 @@
 @if(session('success'))
     <div style="background:#ECFDF5;border:1px solid #6EE7B7;border-radius:10px;
                 padding:12px 16px;margin-bottom:16px;font-size:14px;
-                color:#065F46;display:flex;align-items:center;gap:10px">
+                color:#065F46;display:flex;align-items:flex-start;gap:10px">
         <span style="font-size:18px;flex-shrink:0">✅</span>
-        {{ session('success') }}
+        <span style="white-space:pre-line">{{ session('success') }}</span>
     </div>
 @endif
 
@@ -67,8 +67,8 @@
             <path stroke-linecap="round" stroke-linejoin="round"
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        Sauvegarde automatique planifiée tous les jours à 02h00.
-        Rétention : 30 sauvegardes maximum.
+        Sauvegarde automatique planifiée tous les jours à 02h00, copiée hors-site
+        30 minutes plus tard. Rétention locale : {{ config('backup.keep', 30) }} sauvegardes maximum.
     </div>
 </div>
 
@@ -132,6 +132,42 @@
 
                 {{-- Actions --}}
                 <div style="display:flex;gap:6px;flex-shrink:0">
+
+                    {{-- Étape 1 : vérifier (sans danger, base séparée) --}}
+                    <form method="POST"
+                          action="{{ route('super-admin.backups.verify', $file['name']) }}"
+                          onsubmit="return confirm('Importer cette sauvegarde dans une base de vérification séparée (sans toucher à la production) ?')">
+                        @csrf
+                        <button type="submit"
+                                title="Vérifier le contenu (base séparée, sans danger)"
+                                style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);
+                                       background:#F9FAFB;cursor:pointer;display:flex;align-items:center;
+                                       justify-content:center;color:var(--text2)"
+                                onmouseover="this.style.borderColor='#3B82F6';this.style.color='#3B82F6'"
+                                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </button>
+                    </form>
+
+                    {{-- Étape 2 : basculer réellement la production (dangereux) --}}
+                    <form method="POST"
+                          action="{{ route('super-admin.backups.promote', $file['name']) }}"
+                          onsubmit="return confirm('ATTENTION : ceci va REMPLACER toutes les données actuelles de la PRODUCTION par le contenu de cette sauvegarde ({{ $dateStr }}). Vérifiez d\'abord son contenu (bouton ✓). Une sauvegarde de sécurité de l\'état actuel sera créée automatiquement avant. Continuer ?')">
+                        @csrf
+                        <button type="submit"
+                                title="Basculer la production sur cette sauvegarde"
+                                style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);
+                                       background:#F9FAFB;cursor:pointer;display:flex;align-items:center;
+                                       justify-content:center;color:var(--text2)"
+                                onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'"
+                                onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                        </button>
+                    </form>
 
                     {{-- Télécharger --}}
                     <a href="{{ route('super-admin.backups.download', $file['name']) }}"

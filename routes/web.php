@@ -20,6 +20,7 @@ use App\Http\Controllers\StatistiqueController;
 use App\Http\Controllers\MatierePremiereController;
 use App\Http\Controllers\PaiementFactureController;
 use App\Http\Controllers\ParametreController;
+use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\VersementController;
@@ -65,6 +66,8 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('su
     Route::post('/sauvegardes',                                        [BackupController::class, 'create'])->name('backups.create');
     Route::get('/sauvegardes/{filename}/telecharger',                  [BackupController::class, 'download'])->name('backups.download')->where('filename', '[^/]+');
     Route::delete('/sauvegardes/{filename}',                           [BackupController::class, 'destroy'])->name('backups.destroy')->where('filename', '[^/]+');
+    Route::post('/sauvegardes/{filename}/verifier',                    [BackupController::class, 'verify'])->name('backups.verify')->where('filename', '[^/]+');
+    Route::post('/sauvegardes/{filename}/basculer',                    [BackupController::class, 'promote'])->name('backups.promote')->where('filename', '[^/]+');
     Route::get('/journal',                                             [ActivityLogController::class, 'index'])->name('activity-logs');
 });
 
@@ -147,6 +150,10 @@ Route::middleware(['auth', 'setup', 'role:proprietaire,gerant'])->group(function
     // Dépenses
     Route::get('/depenses/historique', [DepenseController::class, 'historique'])->name('depenses.historique');
     Route::resource('depenses', DepenseController::class);
+
+    // Mon compte (accessible propriétaire et gérant, contrairement à /parametres)
+    Route::get('/mon-compte', [ProfilController::class, 'edit'])->name('profil.edit');
+    Route::put('/mon-compte', [ProfilController::class, 'update'])->name('profil.update');
 
     // Notifications
     Route::get('/notifications/panel',  [NotificationController::class, 'panel'])->name('notifications.panel');

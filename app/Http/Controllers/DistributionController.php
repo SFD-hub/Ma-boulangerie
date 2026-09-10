@@ -15,7 +15,7 @@ class DistributionController extends Controller
     public function show(Distribution $distribution): View
     {
         $distribution->load('livreur', 'produit');
-        abort_if($distribution->livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if(!$distribution->livreur || $distribution->livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $totalVerse  = $distribution->livreur->versements()->sum('montant_verse');
         $reliquat    = $distribution->livreur->distributions()->sum('montant_attendu') - $totalVerse;
@@ -26,7 +26,7 @@ class DistributionController extends Controller
     public function edit(Distribution $distribution): View|RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($distribution->livreur->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$distribution->livreur || $distribution->livreur->boulangerie_id !== $boulangerie_id, 403);
 
         if ($distribution->estRegle()) {
             return redirect()->route('distributions.show', $distribution)
@@ -44,7 +44,7 @@ class DistributionController extends Controller
     public function update(Request $request, Distribution $distribution): RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($distribution->livreur->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$distribution->livreur || $distribution->livreur->boulangerie_id !== $boulangerie_id, 403);
 
         if ($distribution->estRegle()) {
             return redirect()->route('distributions.show', $distribution)

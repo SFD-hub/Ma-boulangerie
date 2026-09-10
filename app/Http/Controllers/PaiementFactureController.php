@@ -13,7 +13,7 @@ class PaiementFactureController extends Controller
     public function store(Request $request, Facture $facture): RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         $solde = $facture->solde();
 
@@ -54,7 +54,7 @@ class PaiementFactureController extends Controller
     public function destroy(PaiementFacture $paiementFacture): RedirectResponse
     {
         $facture = $paiementFacture->facture;
-        abort_if($facture->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $clientAbonne = $facture->clientAbonne;
         $paiementFacture->delete();

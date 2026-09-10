@@ -21,6 +21,17 @@ class EnsureBoulangerieSetup
             return redirect()->route('setup.boulangerie');
         }
 
+        // Coupe l'accès immédiatement si le compte est désactivé entre-temps
+        // (ex: gérant désactivé pendant qu'il a une session déjà ouverte).
+        if ($user && !$user->actif && !$request->routeIs('logout')) {
+            auth()->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')
+                ->withErrors(['login' => 'Ce compte est désactivé. Contactez votre propriétaire.']);
+        }
+
         // Coupe l'accès immédiatement si la boulangerie est suspendue entre-temps,
         // même pour une session déjà ouverte (pas seulement à la connexion).
         if ($user && $user->boulangerie_id && $user->boulangerie?->suspendu && !$request->routeIs('logout')) {

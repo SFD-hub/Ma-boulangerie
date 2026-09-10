@@ -46,6 +46,20 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = auth()->user();
+
+        // Un gérant désactivé ne doit plus pouvoir se connecter, même avec
+        // les bons identifiants — seule une réactivation par le propriétaire
+        // le permet à nouveau.
+        if (! $user->actif) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()
+                ->withErrors(['login' => 'Ce compte est désactivé. Contactez votre propriétaire.'])
+                ->onlyInput('login');
+        }
+
         $user->update(['last_login_at' => now()]);
 
         if ($user->role?->nom === 'super_admin') {

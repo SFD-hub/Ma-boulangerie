@@ -16,7 +16,7 @@ class FactureController extends Controller
     public function show(Facture $facture): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         return view('factures.show', compact('facture'));
     }
@@ -24,7 +24,7 @@ class FactureController extends Controller
     public function edit(Facture $facture): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         return view('factures.edit', compact('facture'));
     }
@@ -32,7 +32,7 @@ class FactureController extends Controller
     public function update(Request $request, Facture $facture): RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         $validated = $request->validate([
             'mois'            => 'required|integer|min:1|max:12',
@@ -40,15 +40,17 @@ class FactureController extends Controller
             'prix_unitaire'   => 'required|integer|min:1',
             'quantite_totale' => 'required|integer|min:1',
             'montant_total'   => 'required|numeric|min:0.01',
-            'statut'          => 'required|string|in:impayee,payee',
         ], [
             'mois.required'          => 'Le mois est obligatoire.',
             'annee.required'         => 'L\'année est obligatoire.',
             'prix_unitaire.required' => 'Le prix unitaire est obligatoire.',
-            'statut.in'              => 'Le statut doit être Impayée ou Payée.',
         ]);
 
+        // Le statut n'est jamais modifiable à la main : il est toujours
+        // recalculé à partir des paiements réellement enregistrés (voir
+        // Facture::syncStatut()), y compris si le montant vient de changer ici.
         $facture->update($validated);
+        $facture->syncStatut();
 
         return redirect()->route('clients-abonnes.factures.historique', $facture->clientAbonne)
             ->with('success', 'Facture mise à jour.');
@@ -57,7 +59,7 @@ class FactureController extends Controller
     public function destroy(Facture $facture): RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         $clientAbonne = $facture->clientAbonne;
         $facture->delete();
@@ -71,7 +73,7 @@ class FactureController extends Controller
     public function payer(Facture $facture): RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         $solde = $facture->solde();
 
@@ -99,7 +101,7 @@ class FactureController extends Controller
     public function imprimer(Facture $facture): View
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
-        abort_if($facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
+        abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         $facture->load('clientAbonne');
         $boulangerie = auth()->user()->boulangerie;

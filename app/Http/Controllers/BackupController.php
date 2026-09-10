@@ -63,6 +63,59 @@ class BackupController extends Controller
         return response()->download($path);
     }
 
+    // ── Étape 1 : restaurer dans une base de vérification séparée ───────────
+    // Ne touche jamais à la production — sert uniquement à inspecter le
+    // contenu d'une sauvegarde avant de décider de basculer dessus.
+    public function verify(string $filename): RedirectResponse
+    {
+        $this->validateFilename($filename);
+
+        $path = $this->backupDir . DIRECTORY_SEPARATOR . $filename;
+        abort_if(! file_exists($path), 404);
+
+        try {
+            Artisan::call('backup:restore-verify', ['filename' => $filename]);
+            $output = trim(Artisan::output());
+
+            $database = config('database.connections.mysql.database') . '_verification';
+
+            ActivityLog::record('backup_verifiee', "Super Admin a importé la sauvegarde {$filename} dans la base de vérification");
+
+            return back()->with('success', "Sauvegarde importée dans la base de vérification « {$database} ». Contenu :\n{$output}");
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Erreur lors de la vérification : ' . $e->getMessage());
+        }
+    }
+
+    // ── Étape 2 : basculer réellement la production sur cette sauvegarde ────
+    // Irréversible sans une nouvelle restauration : une sauvegarde de
+    // sécurité de l'état actuel est donc toujours prise juste avant.
+    public function promote(string $filename): RedirectResponse
+    {
+        $this->validateFilename($filename);
+
+        $path = $this->backupDir . DIRECTORY_SEPARATOR . $filename;
+        abort_if(! file_exists($path), 404);
+
+        $safetyExitCode = Artisan::call('backup:database');
+        if ($safetyExitCode !== 0) {
+            return back()->with('error', 'Restauration annulée : impossible de créer la sauvegarde de sécurité préalable.');
+        }
+
+        try {
+            $exitCode = Artisan::call('backup:restore-production', ['filename' => $filename]);
+
+            if ($exitCode === 0) {
+                ActivityLog::record('backup_restauree', "Super Admin a restauré la base de PRODUCTION depuis la sauvegarde {$filename}");
+                return back()->with('success', "Base de production restaurée à partir de « {$filename} ». Une sauvegarde de l'état précédent a été créée automatiquement.");
+            }
+
+            return back()->with('error', 'La restauration a échoué. Consultez les logs pour le détail.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Erreur lors de la restauration : ' . $e->getMessage());
+        }
+    }
+
     public function destroy(string $filename): RedirectResponse
     {
         $this->validateFilename($filename);
