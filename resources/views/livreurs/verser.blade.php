@@ -323,10 +323,12 @@
             }
         }
 
-        // Restaurer la sélection après retour d'erreur de validation
-        @if(old('distribution_id'))
+        // Restaurer la sélection après retour d'erreur de validation, ou
+        // présélectionner la distribution ciblée depuis l'historique
+        // ("Régler le reliquat" sur une ligne précise).
+        @if(old('distribution_id') || ($distributionPreselectionnee ?? null))
             document.addEventListener('DOMContentLoaded', function () {
-                selectDist({{ old('distribution_id') }});
+                selectDist({{ old('distribution_id') ?: $distributionPreselectionnee->id }});
             });
         @endif
     </script>

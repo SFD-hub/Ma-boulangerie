@@ -105,8 +105,14 @@
 
                         {{-- Reliquat (si > 0) --}}
                         @if((float) $dist->reliquat > 0)
-                            <div style="margin-top:4px;font-size:13px;font-weight:700;color:#EF4444">
-                                Reliquat&nbsp;: {{ number_format((float) $dist->reliquat, 0, ',', ' ') }}&nbsp;FCFA
+                            <div style="margin-top:4px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+                                <div style="font-size:13px;font-weight:700;color:#EF4444">
+                                    Reliquat&nbsp;: {{ number_format((float) $dist->reliquat, 0, ',', ' ') }}&nbsp;FCFA
+                                </div>
+                                <a href="{{ route('livreurs.verser.form', $livreur) }}?distribution_id={{ $dist->id }}"
+                                   style="flex-shrink:0;font-size:12px;font-weight:700;color:#FFFFFF;background:#F97316;border-radius:20px;padding:6px 14px;text-decoration:none">
+                                    Régler
+                                </a>
                             </div>
                         @endif
 

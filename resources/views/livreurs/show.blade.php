@@ -207,15 +207,23 @@
                             {{ $distEstReglee ? 'Réglée' : 'En attente' }}
                         </span>
                     </div>
-                    <span style="font-size:13px;color:#6B7280">
-                        {{ $dist->pains_attribues }}&nbsp;pains
-                        @if($dist->versement)
-                            · Versé&nbsp;: {{ number_format($dist->versement->montant_verse, 0, ',', ' ') }}&nbsp;FCFA
-                            @if((float) $dist->reliquat > 0)
-                                · <span style="color:#EF4444;font-weight:600">Reliquat&nbsp;: {{ number_format($dist->reliquat, 0, ',', ' ') }}&nbsp;FCFA</span>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                        <span style="font-size:13px;color:#6B7280">
+                            {{ $dist->pains_attribues }}&nbsp;pains
+                            @if($dist->versement)
+                                · Versé&nbsp;: {{ number_format($dist->versement->montant_verse, 0, ',', ' ') }}&nbsp;FCFA
+                                @if((float) $dist->reliquat > 0)
+                                    · <span style="color:#EF4444;font-weight:600">Reliquat&nbsp;: {{ number_format($dist->reliquat, 0, ',', ' ') }}&nbsp;FCFA</span>
+                                @endif
                             @endif
+                        </span>
+                        @if((float) $dist->reliquat > 0)
+                            <a href="{{ route('livreurs.verser.form', $livreur) }}?distribution_id={{ $dist->id }}"
+                               style="flex-shrink:0;font-size:12px;font-weight:700;color:#FFFFFF;background:#F97316;border-radius:20px;padding:5px 12px;text-decoration:none">
+                                Régler
+                            </a>
                         @endif
-                    </span>
+                    </div>
                 </div>
             @endforeach
         </div>

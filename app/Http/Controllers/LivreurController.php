@@ -122,7 +122,7 @@ class LivreurController extends Controller
         return view('livreurs.attribuer', compact('livreur', 'prixPain', 'produits', 'defaultProduitId'));
     }
 
-    public function verserForm(Livreur $livreur): View
+    public function verserForm(Request $request, Livreur $livreur): View
     {
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
         $livreur->load(['distributions.versement', 'distributions.produit']);
@@ -137,8 +137,16 @@ class LivreurController extends Controller
 
         $prixPain = auth()->user()->boulangerie?->prix_pain ?? 0;
 
+        // Pré-sélection depuis l'historique ("Régler le reliquat" sur une
+        // distribution précise) — ignorée si elle ne correspond à aucune
+        // distribution réellement en attente (évite de présélectionner une
+        // distribution déjà réglée ou d'un autre livreur).
+        $distributionPreselectionnee = $distributionsNonReglees
+            ->firstWhere('id', (int) $request->query('distribution_id'));
+
         return view('livreurs.verser', compact(
-            'livreur', 'distributionsNonReglees', 'prixPain', 'reliquatTotalEnAttente'
+            'livreur', 'distributionsNonReglees', 'prixPain', 'reliquatTotalEnAttente',
+            'distributionPreselectionnee'
         ));
     }
 
