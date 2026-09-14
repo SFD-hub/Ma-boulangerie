@@ -9,6 +9,12 @@
     </div>
 @endif
 
+@if (session('error'))
+    <div style="background: #fee; border: 1px solid #c33; padding: 16px; border-radius: 6px; margin-bottom: 16px; color: #c33;">
+        {{ session('error') }}
+    </div>
+@endif
+
 <div style="display: grid; gap: 20px;">
 
     {{-- Livreur (lecture seule — non modifiable) --}}

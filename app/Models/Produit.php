@@ -48,4 +48,27 @@ class Produit extends Model
             ->orderBy('id')
             ->value('id');
     }
+
+    /**
+     * Pains de ce produit encore disponibles pour distribution : tout ce qui
+     * a été produit, moins tout ce qui a déjà été distribué (tous livreurs,
+     * toutes dates confondues) — on ne peut jamais distribuer plus de pains
+     * que ce que la production a réellement fourni.
+     *
+     * @param  int|null  $exclureDistributionId  Distribution à ignorer dans le
+     *         total déjà distribué (modification d'une distribution
+     *         existante : sa propre quantité ne doit pas se compter contre
+     *         elle-même).
+     */
+    public function painsDisponibles(?int $exclureDistributionId = null): int
+    {
+        $totalProduit = $this->productions()->sum('nombre_pains_produits');
+
+        $totalDistribueQuery = $this->distributions();
+        if ($exclureDistributionId) {
+            $totalDistribueQuery->where('id', '!=', $exclureDistributionId);
+        }
+
+        return (int) $totalProduit - (int) $totalDistribueQuery->sum('nombre_pains');
+    }
 }

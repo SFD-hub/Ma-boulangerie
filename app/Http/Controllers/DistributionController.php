@@ -66,6 +66,17 @@ class DistributionController extends Controller
             'prix_pain.min'                    => 'Le prix du pain doit être au moins 1 FCFA.',
         ]);
 
+        $produit    = Produit::findOrFail($validated['produit_id']);
+        $disponible = $produit->painsDisponibles($distribution->id);
+
+        if ($validated['nombre_pains'] > $disponible) {
+            return redirect()->back()->withInput()->with('error',
+                'Production atteinte pour « ' . $produit->nom . ' » — disponible : ' . $disponible
+                . ' pain' . ($disponible > 1 ? 's' : '') . ', demandé : ' . $validated['nombre_pains']
+                . '. Impossible de distribuer des pains qui n\'ont pas été produits.'
+            );
+        }
+
         $montantAttendu = $validated['nombre_pains'] * $validated['prix_pain'];
 
         $distribution->update([
