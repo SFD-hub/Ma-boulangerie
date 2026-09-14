@@ -70,10 +70,10 @@ class DistributionController extends Controller
         $disponible = $produit->painsDisponibles($distribution->id);
 
         if ($validated['nombre_pains'] > $disponible) {
+            $reste = max(0, $disponible);
             return redirect()->back()->withInput()->with('error',
-                'Production atteinte pour « ' . $produit->nom . ' » — disponible : ' . $disponible
-                . ' pain' . ($disponible > 1 ? 's' : '') . ', demandé : ' . $validated['nombre_pains']
-                . '. Impossible de distribuer des pains qui n\'ont pas été produits.'
+                'Il ne reste que ' . $reste . ' pain' . ($reste > 1 ? 's' : '')
+                . ' disponible' . ($reste > 1 ? 's' : '') . ' pour « ' . $produit->nom . ' ».'
             );
         }
 

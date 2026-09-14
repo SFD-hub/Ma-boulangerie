@@ -25,12 +25,6 @@
         </div>
     @endif
 
-    @if(session('error'))
-        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#EF4444">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div style="background:#FFFFFF;border-radius:18px;padding:20px 16px;box-shadow:0 1px 3px rgba(0,0,0,.07)">
 
         <form method="POST" action="{{ route('livreurs.attribuer', $livreur) }}">
