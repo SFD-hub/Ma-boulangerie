@@ -50,8 +50,12 @@ class Distribution extends Model
 
     public function estRegle(): bool
     {
-        // Réglée dès qu'un versement existe, ou si le statut est explicitement 'reglee' (ex: soldé par surplus)
-        return $this->versement !== null || $this->statut === 'reglee';
+        // Réglée uniquement quand il ne reste plus rien à payer -- un
+        // versement partiel (reliquat > 0) ne suffit pas, sinon un
+        // versement supplémentaire sur cette même distribution est
+        // faussement refusé comme "déjà réglée" (LivreurController::verser()),
+        // et elle disparaît à tort de la liste des distributions à régler.
+        return (float) $this->reliquat <= 0;
     }
 
     public function getPainsAttribuesAttribute(): int

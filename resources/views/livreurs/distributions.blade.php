@@ -54,7 +54,7 @@
 
             @foreach($distributions as $dist)
                 @php
-                    $estReglee = $dist->statut === 'reglee' || $dist->versement !== null;
+                    $estReglee = (float) $dist->reliquat <= 0;
                     $aVersement = $dist->versement !== null;
                 @endphp
                 <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}position:relative;{{ !$estReglee ? 'background:#FFFBEB;border-left:3px solid #F97316;' : '' }}">

@@ -199,7 +199,7 @@
                             {{ $dist->produit->nom ?? '—' }} · {{ $dist->date_distribution->format('d/m/Y') }}
                             <span style="font-size:12px;font-weight:600;color:#9CA3AF">{{ $dist->moment_icon }} {{ $dist->heure_enregistrement }}</span>
                         </span>
-                        @php $distEstReglee = $dist->versement !== null || $dist->statut === 'reglee'; @endphp
+                        @php $distEstReglee = (float) $dist->reliquat <= 0; @endphp
                         <span style="font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;
                             {{ $distEstReglee
                                 ? 'background:#ECFDF5;color:#059669'
