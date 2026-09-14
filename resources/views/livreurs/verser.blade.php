@@ -75,57 +75,91 @@
                     </div>
                 </div>
 
-                {{-- Distribution concernée — dropdown custom --}}
-                <div style="margin-bottom:18px;position:relative" id="distDropdownWrapper">
-                    <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">
-                        Distribution concernée (veille) *
-                    </label>
-
-                    {{-- Trigger --}}
-                    <div id="distTrigger" onclick="toggleDropdown(event)"
-                         style="display:flex;align-items:center;justify-content:space-between;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;cursor:pointer;user-select:none;box-sizing:border-box">
-                        <span id="distTriggerLabel" style="font-size:15px;color:#9CA3AF">Sélectionner une distribution</span>
-                        <svg id="distChevron" width="18" height="18" fill="none" stroke="#9CA3AF" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;transition:transform .2s">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </div>
-
-                    {{-- Liste déroulante --}}
-                    <div id="distList" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.1);overflow:hidden">
-                        @foreach($distributionsNonReglees as $dist)
-                            @php
-                                $aDejaVersement = $dist->versement !== null;
-                                $reliquatActuel = (float) $dist->reliquat;
-                                $invendusExist  = $dist->nombre_invendus ?? '';
-                            @endphp
-                            <div onclick="selectDist({{ $dist->id }})"
-                                 id="distOption_{{ $dist->id }}"
-                                 data-dist-option="{{ $dist->id }}"
-                                 data-pains="{{ $dist->pains_attribues }}"
-                                 data-prix="{{ $dist->prix_pain ?? $prixPain }}"
-                                 data-has-versement="{{ $aDejaVersement ? 1 : 0 }}"
-                                 data-reliquat-actuel="{{ $reliquatActuel }}"
-                                 data-invendus-existants="{{ $invendusExist }}"
-                                 data-label="{{ $dist->produit->nom ?? '—' }} — {{ $dist->date_distribution->format('d/m/Y') }} — {{ $dist->pains_attribues }} pains"
-                                 style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;{{ !$loop->last ? 'border-bottom:1px solid #E5E7EB;' : '' }}"
-                                 onmouseover="this.style.background='#FFF7ED'" onmouseout="this.style.background='#FFFFFF'">
-                                <div style="flex:1;min-width:0">
-                                    <div style="font-size:14px;font-weight:700;color:#111827">{{ $dist->produit->nom ?? '—' }} · {{ $dist->date_distribution->format('d/m/Y') }}</div>
-                                    <div style="font-size:12px;color:#6B7280;margin-top:2px">
-                                        {{ $dist->pains_attribues }}&nbsp;pains
-                                        @if($aDejaVersement)
-                                            &nbsp;·&nbsp;Reliquat&nbsp;:&nbsp;<strong style="color:#EF4444">{{ number_format($reliquatActuel, 0, ',', ' ') }}&nbsp;FCFA</strong>
-                                        @endif
-                                    </div>
+                @if($distributionPreselectionnee)
+                    {{-- Distribution ciblée depuis "Régler" — fixe, non modifiable --}}
+                    @php
+                        $dpAVersement    = $distributionPreselectionnee->versement !== null;
+                        $dpReliquat      = (float) $distributionPreselectionnee->reliquat;
+                        $dpInvendusExist = $distributionPreselectionnee->nombre_invendus ?? '';
+                    @endphp
+                    <div style="margin-bottom:18px">
+                        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">
+                            Distribution concernée
+                        </label>
+                        <div id="distOption_{{ $distributionPreselectionnee->id }}"
+                             data-pains="{{ $distributionPreselectionnee->pains_attribues }}"
+                             data-prix="{{ $distributionPreselectionnee->prix_pain ?? $prixPain }}"
+                             data-has-versement="{{ $dpAVersement ? 1 : 0 }}"
+                             data-reliquat-actuel="{{ $dpReliquat }}"
+                             data-invendus-existants="{{ $dpInvendusExist }}"
+                             data-label="{{ $distributionPreselectionnee->produit->nom ?? '—' }} — {{ $distributionPreselectionnee->date_distribution->format('d/m/Y') }} — {{ $distributionPreselectionnee->pains_attribues }} pains"
+                             style="display:flex;align-items:center;justify-content:space-between;background:#FFF7ED;border:1px solid #F97316;border-radius:12px;padding:14px 16px;box-sizing:border-box">
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:15px;font-weight:700;color:#111827">{{ $distributionPreselectionnee->produit->nom ?? '—' }} · {{ $distributionPreselectionnee->date_distribution->format('d/m/Y') }}</div>
+                                <div style="font-size:12px;color:#6B7280;margin-top:2px">
+                                    {{ $distributionPreselectionnee->pains_attribues }}&nbsp;pains
+                                    @if($dpAVersement)
+                                        &nbsp;·&nbsp;Reliquat&nbsp;:&nbsp;<strong style="color:#EF4444">{{ number_format($dpReliquat, 0, ',', ' ') }}&nbsp;FCFA</strong>
+                                    @endif
                                 </div>
-                                <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#FFFBEB;color:#D97706;flex-shrink:0;margin-left:8px">En attente</span>
                             </div>
-                        @endforeach
+                        </div>
                     </div>
 
-                    {{-- Input caché --}}
-                    <input type="hidden" name="distribution_id" id="distHiddenInput" value="{{ old('distribution_id') }}">
-                </div>
+                    <input type="hidden" name="distribution_id" id="distHiddenInput" value="{{ $distributionPreselectionnee->id }}">
+                @else
+                    {{-- Distribution concernée — dropdown custom --}}
+                    <div style="margin-bottom:18px;position:relative" id="distDropdownWrapper">
+                        <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">
+                            Distribution concernée (veille) *
+                        </label>
+
+                        {{-- Trigger --}}
+                        <div id="distTrigger" onclick="toggleDropdown(event)"
+                             style="display:flex;align-items:center;justify-content:space-between;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;cursor:pointer;user-select:none;box-sizing:border-box">
+                            <span id="distTriggerLabel" style="font-size:15px;color:#9CA3AF">Sélectionner une distribution</span>
+                            <svg id="distChevron" width="18" height="18" fill="none" stroke="#9CA3AF" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;transition:transform .2s">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+
+                        {{-- Liste déroulante --}}
+                        <div id="distList" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.1);overflow:hidden">
+                            @foreach($distributionsNonReglees as $dist)
+                                @php
+                                    $aDejaVersement = $dist->versement !== null;
+                                    $reliquatActuel = (float) $dist->reliquat;
+                                    $invendusExist  = $dist->nombre_invendus ?? '';
+                                @endphp
+                                <div onclick="selectDist({{ $dist->id }})"
+                                     id="distOption_{{ $dist->id }}"
+                                     data-dist-option="{{ $dist->id }}"
+                                     data-pains="{{ $dist->pains_attribues }}"
+                                     data-prix="{{ $dist->prix_pain ?? $prixPain }}"
+                                     data-has-versement="{{ $aDejaVersement ? 1 : 0 }}"
+                                     data-reliquat-actuel="{{ $reliquatActuel }}"
+                                     data-invendus-existants="{{ $invendusExist }}"
+                                     data-label="{{ $dist->produit->nom ?? '—' }} — {{ $dist->date_distribution->format('d/m/Y') }} — {{ $dist->pains_attribues }} pains"
+                                     style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;{{ !$loop->last ? 'border-bottom:1px solid #E5E7EB;' : '' }}"
+                                     onmouseover="this.style.background='#FFF7ED'" onmouseout="this.style.background='#FFFFFF'">
+                                    <div style="flex:1;min-width:0">
+                                        <div style="font-size:14px;font-weight:700;color:#111827">{{ $dist->produit->nom ?? '—' }} · {{ $dist->date_distribution->format('d/m/Y') }}</div>
+                                        <div style="font-size:12px;color:#6B7280;margin-top:2px">
+                                            {{ $dist->pains_attribues }}&nbsp;pains
+                                            @if($aDejaVersement)
+                                                &nbsp;·&nbsp;Reliquat&nbsp;:&nbsp;<strong style="color:#EF4444">{{ number_format($reliquatActuel, 0, ',', ' ') }}&nbsp;FCFA</strong>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#FFFBEB;color:#D97706;flex-shrink:0;margin-left:8px">En attente</span>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Input caché --}}
+                        <input type="hidden" name="distribution_id" id="distHiddenInput" value="{{ old('distribution_id') }}">
+                    </div>
+                @endif
 
                 {{-- Résumé dynamique de la distribution --}}
                 <div id="distResume" style="display:none;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:14px 16px;margin-bottom:18px">
@@ -156,12 +190,17 @@
                     </div>
                 </div>
 
-                {{-- Invendus retournés --}}
-                <div style="margin-bottom:18px">
+                {{-- Invendus retournés — uniquement pertinent pour le premier versement d'une
+                     distribution ; sans objet pour régler un reliquat déjà calculé. --}}
+                @php
+                    $dpAVersementInit = ($distributionPreselectionnee ?? null) && $distributionPreselectionnee->versement !== null;
+                    $invendusInitial  = $dpAVersementInit ? ($distributionPreselectionnee->nombre_invendus ?? 0) : old('nombre_invendus', 0);
+                @endphp
+                <div id="invendusWrapper" style="margin-bottom:18px;{{ $dpAVersementInit ? 'display:none' : '' }}">
                     <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Invendus retournés *</label>
                     <input type="number" name="nombre_invendus" min="0"
-                           value="{{ old('nombre_invendus', 0) }}" id="invendusInput"
-                           placeholder="0" oninput="calcVers()" required
+                           value="{{ $invendusInitial }}" id="invendusInput"
+                           placeholder="0" oninput="calcVers()"
                            style="width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;font-size:15px;color:#111827;box-sizing:border-box;outline:none">
                 </div>
 
@@ -197,8 +236,10 @@
 
         function closeDropdown() {
             _ddOpen = false;
-            document.getElementById('distList').style.display     = 'none';
-            document.getElementById('distChevron').style.transform = '';
+            const list    = document.getElementById('distList');
+            const chevron = document.getElementById('distChevron');
+            if (list)    list.style.display     = 'none';
+            if (chevron) chevron.style.transform = '';
         }
 
         document.addEventListener('click', function (e) {
@@ -213,30 +254,33 @@
             // Mettre à jour l'input caché
             document.getElementById('distHiddenInput').value = distId;
 
-            // Mettre à jour le trigger
+            // Mettre à jour le trigger (absent si la distribution est fixe, pré-sélectionnée depuis "Régler")
             const triggerLabel = document.getElementById('distTriggerLabel');
-            triggerLabel.textContent = option.getAttribute('data-label');
-            triggerLabel.style.color = '#111827';
+            if (triggerLabel) {
+                triggerLabel.textContent = option.getAttribute('data-label');
+                triggerLabel.style.color = '#111827';
+            }
             const trigger = document.getElementById('distTrigger');
-            trigger.style.borderColor = '#F97316';
-            trigger.style.background  = '#FFF7ED';
+            if (trigger) {
+                trigger.style.borderColor = '#F97316';
+                trigger.style.background  = '#FFF7ED';
+            }
 
             closeDropdown();
 
-            // Gérer le champ invendus selon mode 1 / mode 2
+            // Invendus retournés : sans objet pour régler un reliquat déjà
+            // calculé (le premier versement l'a déjà fixé) — champ masqué,
+            // pas seulement grisé, avec sa valeur déjà connue conservée pour l'envoi.
             const hasVersement  = option.getAttribute('data-has-versement') === '1';
             const invendusInput = document.getElementById('invendusInput');
+            const invendusWrapper = document.getElementById('invendusWrapper');
             if (invendusInput) {
                 if (hasVersement) {
                     const existants = option.getAttribute('data-invendus-existants');
-                    invendusInput.value    = existants !== '' ? existants : '0';
-                    invendusInput.readOnly = true;
-                    invendusInput.style.background = '#F3F4F6';
-                    invendusInput.style.color      = '#9CA3AF';
+                    invendusInput.value = existants !== '' ? existants : '0';
+                    if (invendusWrapper) invendusWrapper.style.display = 'none';
                 } else {
-                    invendusInput.readOnly = false;
-                    invendusInput.style.background = '#F9FAFB';
-                    invendusInput.style.color      = '#111827';
+                    if (invendusWrapper) invendusWrapper.style.display = 'block';
                 }
             }
 
