@@ -73,17 +73,6 @@
         .total-label { font-size: 15px; font-weight: 700; color: #374151; }
         .total-amount { font-size: 22px; font-weight: 900; color: #F97316; }
 
-        /* ── Statut ── */
-        .statut-badge {
-            display: inline-block;
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 700;
-        }
-        .statut-payee   { background: #ECFDF5; color: #059669; }
-        .statut-impayee { background: #FFFBEB; color: #D97706; }
-
         /* ── Footer ── */
         .footer {
             text-align: center;
@@ -158,14 +147,6 @@
             <tr>
                 <td>Date de génération</td>
                 <td>{{ $facture->date_facture->format('d/m/Y') }}</td>
-            </tr>
-            <tr>
-                <td>Statut</td>
-                <td>
-                    <span class="statut-badge {{ $facture->statut === 'payee' ? 'statut-payee' : 'statut-impayee' }}">
-                        {{ $facture->statut === 'payee' ? 'Payée' : 'Impayée' }}
-                    </span>
-                </td>
             </tr>
             @if($facture->statut === 'payee' && $facture->date_paiement)
             <tr>
