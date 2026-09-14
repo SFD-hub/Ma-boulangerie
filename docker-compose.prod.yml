@@ -1,0 +1,40 @@
+# Modèle de déploiement pour ma-boulangerie sur le VPS partagé.
+# S'appuie sur le socle partagé déjà en place (Traefik, MySQL) :
+#   - réseau Docker externe "web"       (utilisé par Traefik pour router les requêtes)
+#   - réseau Docker externe "mysql_net" (utilisé pour joindre le conteneur MySQL partagé)
+# Le fichier .env réel (non commité) doit se trouver à côté de ce fichier sur le serveur.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    env_file: .env
+    volumes:
+      - storage_app:/var/www/html/storage/app
+    networks:
+      - web
+      - mysql_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.ma-boulangerie.rule=Host(`boulangerie.gallastech.com`)"
+      - "traefik.http.routers.ma-boulangerie.entrypoints=websecure"
+      - "traefik.http.routers.ma-boulangerie.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ma-boulangerie.loadbalancer.server.port=80"
+
+networks:
+  web:
+    external: true
+  mysql_net:
+    external: true
+
+volumes:
+  storage_app:
