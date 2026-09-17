@@ -31,6 +31,7 @@ class ClientAbonneController extends Controller
         $validated = $request->validate([
             'nom_complet' => 'required|string|max:255',
             'telephone'   => 'required|string|max:20',
+            'adresse'     => 'nullable|string|max:255',
             'actif'       => 'sometimes|boolean',
         ], [
             'nom_complet.required' => 'Le nom est obligatoire.',
@@ -50,6 +51,7 @@ class ClientAbonneController extends Controller
             'prenom'         => $prenom,
             'nom'            => $nom,
             'telephone'      => $validated['telephone'],
+            'adresse'        => $validated['adresse'] ?? null,
             'actif'          => $validated['actif'] ?? true,
             'boulangerie_id' => $boulangerie_id,
         ]);
@@ -80,6 +82,7 @@ class ClientAbonneController extends Controller
             'nom'       => 'required|string|max:255',
             'prenom'    => 'required|string|max:255',
             'telephone' => 'required|string|max:20',
+            'adresse'   => 'nullable|string|max:255',
             'actif'     => 'sometimes|boolean',
         ]);
 

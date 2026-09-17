@@ -21,6 +21,7 @@ class ClientAbonne extends Model
         'nom',
         'prenom',
         'telephone',
+        'adresse',
         'actif',
         'boulangerie_id',
     ];
