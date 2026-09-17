@@ -11,19 +11,19 @@ use Illuminate\Http\RedirectResponse;
 
 class ClientAbonneController extends Controller
 {
-    public function index(): View
+    public function index(): RedirectResponse
     {
-        $boulangerie_id = auth()->user()->boulangerie_id;
-        $clients = ClientAbonne::where('boulangerie_id', $boulangerie_id)
-            ->orderBy('nom')
-            ->get();
-
-        return view('clients-abonnes.index', compact('clients'));
+        // La vraie liste vit désormais dans le module "Clients" unifié —
+        // cette route ne sert plus qu'à ne pas casser les liens "← Retour"
+        // existants (create/show/_form) qui pointent encore vers son nom.
+        return redirect()->route('clients.index', ['type' => 'abonne']);
     }
 
-    public function create(): View
+    public function create(): RedirectResponse
     {
-        return view('clients-abonnes.create');
+        // Le formulaire d'ajout est désormais unique pour les 3 types
+        // (Livreur/Client/Abonné), dans le module "Clients".
+        return redirect()->route('clients.create');
     }
 
     public function store(Request $request): RedirectResponse
@@ -47,7 +47,7 @@ class ClientAbonneController extends Controller
 
         $boulangerie_id = auth()->user()->boulangerie_id;
 
-        ClientAbonne::create([
+        $clientAbonne = ClientAbonne::create([
             'prenom'         => $prenom,
             'nom'            => $nom,
             'telephone'      => $validated['telephone'],
@@ -56,7 +56,7 @@ class ClientAbonneController extends Controller
             'boulangerie_id' => $boulangerie_id,
         ]);
 
-        return redirect()->route('clients-abonnes.index')
+        return redirect()->route('clients-abonnes.show', $clientAbonne)
             ->with('success', 'Abonné créé avec succès.');
     }
 

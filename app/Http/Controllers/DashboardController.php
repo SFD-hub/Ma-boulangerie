@@ -27,10 +27,13 @@ class DashboardController extends Controller
             ->whereDate('date_production', $today)
             ->sum('nombre_pains_produits');
 
-        // Pains distribués aujourd'hui (somme nombre_pains des distributions d'aujourd'hui)
+        // Pains distribués/consommés aujourd'hui (livreurs+clients ET abonnés)
         $painsDistribues = (int) Distribution::whereHas('livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
-            ->whereDate('date_distribution', $today)
-            ->sum('nombre_pains');
+                ->whereDate('date_distribution', $today)
+                ->sum('nombre_pains')
+            + (int) ConsommationAbonne::whereHas('clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
+                ->whereDate('date_consommation', $today)
+                ->sum('quantite');
 
         // Stock farine (en sacs)
         $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)
@@ -55,8 +58,8 @@ class DashboardController extends Controller
             $alertes->push(['nom' => 'Levure', 'stock' => $levureStock, 'seuil' => $levureSeuil, 'unite' => 'paquets']);
         }
 
-        // Dernières activités
-        $activites = $this->derniereActivite($boulangerie_id);
+        // Distribution du jour (6 dernières, livreurs+clients et abonnés confondus)
+        $distributionsJour = $this->derniereDistribution($boulangerie_id, $today);
 
         return view('dashboard.index', compact(
             'productionJour',
@@ -66,8 +69,43 @@ class DashboardController extends Controller
             'farineSeuil',
             'levureSeuil',
             'alertes',
-            'activites'
+            'distributionsJour'
         ));
+    }
+
+    private function derniereDistribution(int $boulangerie_id, Carbon $today): array
+    {
+        $livreurs = Distribution::whereHas('livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
+            ->whereDate('date_distribution', $today)
+            ->with('livreur')
+            ->get()
+            ->map(fn ($d) => [
+                'nom'       => trim($d->livreur->prenom . ' ' . $d->livreur->nom),
+                'type'      => $d->livreur->type,
+                'typeLabel' => $d->livreur->typeLabel(),
+                'quantite'  => (int) $d->nombre_pains,
+                'route'     => route('livreurs.show', $d->livreur),
+                'at'        => $d->created_at,
+            ]);
+
+        $abonnes = ConsommationAbonne::whereHas('clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
+            ->whereDate('date_consommation', $today)
+            ->with('clientAbonne')
+            ->get()
+            ->map(fn ($c) => [
+                'nom'       => trim($c->clientAbonne->prenom . ' ' . $c->clientAbonne->nom),
+                'type'      => 'abonne',
+                'typeLabel' => 'Abonné',
+                'quantite'  => (int) $c->quantite,
+                'route'     => route('clients-abonnes.show', $c->clientAbonne),
+                'at'        => $c->created_at,
+            ]);
+
+        return $livreurs->concat($abonnes)
+            ->sortByDesc('at')
+            ->take(6)
+            ->values()
+            ->all();
     }
 
     public function activites(): View

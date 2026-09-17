@@ -35,8 +35,9 @@
             <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">pains</div>
         </div>
 
-        {{-- Pains distribués — fond bleu --}}
-        <div style="background:#DBEAFE;border-radius:18px;padding:18px 14px">
+        {{-- Pains distribués — fond bleu, renvoie vers le détail du jour --}}
+        <a href="{{ route('clients.distribution') }}"
+           style="background:#DBEAFE;border-radius:18px;padding:18px 14px;text-decoration:none;display:block">
             <div style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:10px;line-height:1.3">
                 Pains distribués
             </div>
@@ -44,7 +45,7 @@
                 {{ number_format($painsDistribues, 0, ',', ' ') }}
             </div>
             <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">pains</div>
-        </div>
+        </a>
 
         {{-- Stock Farine — fond orange/beige --}}
         <div style="background:#FFEDD5;border-radius:18px;padding:18px 14px{{ $farineStock <= $farineSeuil && $farineSeuil > 0 ? ';outline:2px solid #FBBF24;outline-offset:-2px' : '' }}">
@@ -70,47 +71,46 @@
 
     </div>
 
-    {{-- ── Dernières activités ── --}}
+    {{-- ── Distribution du jour ── --}}
     <div style="background:#FFFFFF;border-radius:18px;padding:18px 16px;box-shadow:0 1px 3px rgba(0,0,0,.07)">
 
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-            <span style="font-size:16px;font-weight:700;color:#111827">Dernières activités</span>
-            <a href="{{ route('dashboard.activites') }}"
+            <span style="font-size:16px;font-weight:700;color:#111827">Distribution du jour</span>
+            <a href="{{ route('clients.distribution') }}"
                style="font-size:13px;font-weight:600;color:#F97316;text-decoration:none">
                 Voir plus
             </a>
         </div>
 
-        @if(empty($activites))
+        @if(empty($distributionsJour))
             <div style="text-align:center;padding:24px 0;color:#9CA3AF;font-size:14px">
-                Aucune activité enregistrée.
+                Personne n'a pris de pain aujourd'hui.
             </div>
         @else
-            @foreach($activites as $a)
+            @foreach($distributionsJour as $d)
                 @php
-                    $iconBg = match($a['icon']) {
-                        '🍞'  => '#ECFDF5',
-                        '📦'  => '#FFF3E0',
-                        '💰'  => '#EDE9FE',
-                        '💸'  => '#FEF3C7',
-                        '👤'  => '#EFF6FF',
-                        '👔'  => '#F0FDF4',
-                        default => '#F3F4F6',
+                    $badgeClass = match($d['type']) {
+                        'livreur' => 'badge-blue',
+                        'client'  => 'badge-orange',
+                        default   => 'badge-purple',
                     };
                 @endphp
-                <div style="display:flex;align-items:center;gap:14px;padding:11px 0;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}">
-                    <div style="width:42px;height:42px;border-radius:11px;background:{{ $iconBg }};display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">
-                        {{ $a['icon'] }}
-                    </div>
+                <a href="{{ $d['route'] }}"
+                   style="display:flex;align-items:center;gap:14px;padding:11px 0;text-decoration:none;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}">
+                    <div class="avatar">{{ strtoupper(substr($d['nom'], 0, 1)) }}</div>
                     <div style="flex:1;min-width:0">
                         <div style="font-size:14px;font-weight:600;color:#111827;line-height:1.3">
-                            {{ $a['label'] }}
+                            {{ $d['nom'] }}
                         </div>
                         <div style="font-size:12px;color:#9CA3AF;margin-top:2px">
-                            {{ $a['at']->format('d/m/Y') }} - {{ $a['at']->format('H:i') }}
+                            {{ $d['at']->format('H:i') }}
                         </div>
                     </div>
-                </div>
+                    <span class="badge {{ $badgeClass }}">{{ $d['typeLabel'] }}</span>
+                    <span style="font-size:14px;font-weight:700;color:#111827">
+                        {{ $d['quantite'] }} pain{{ $d['quantite'] > 1 ? 's' : '' }}
+                    </span>
+                </a>
             @endforeach
         @endif
 

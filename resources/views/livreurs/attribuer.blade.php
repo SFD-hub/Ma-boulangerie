@@ -32,7 +32,7 @@
 
             {{-- Livreur (affichage) --}}
             <div style="margin-bottom:18px">
-                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Livreur</label>
+                <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">{{ $livreur->typeLabel() }}</label>
                 <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:13px 16px;font-size:15px;font-weight:600;color:#111827;display:flex;align-items:center;gap:10px">
                     <div style="width:32px;height:32px;border-radius:8px;background:#F97316;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">
                         {{ strtoupper(substr($livreur->prenom, 0, 1)) }}

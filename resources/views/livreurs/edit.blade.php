@@ -38,6 +38,20 @@
                        value="{{ old('telephone', $livreur->telephone) }}" required>
             </div>
 
+            <div class="form-group">
+                <label class="form-label">Type *</label>
+                <div style="display:flex;gap:20px;padding-top:4px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+                        <input type="radio" name="type" value="livreur" {{ old('type', $livreur->type) === 'livreur' ? 'checked' : '' }}>
+                        <span>Livreur</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+                        <input type="radio" name="type" value="client" {{ old('type', $livreur->type) === 'client' ? 'checked' : '' }}>
+                        <span>Client</span>
+                    </label>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-primary btn-full">Enregistrer</button>
         </form>
     </div>

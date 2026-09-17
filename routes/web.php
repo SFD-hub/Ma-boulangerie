@@ -9,6 +9,7 @@ use App\Http\Controllers\BoulangerieSwitchController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\BilanController;
 use App\Http\Controllers\ClientAbonneController;
+use App\Http\Controllers\ClientsController;
 use App\Http\Controllers\ConsommationAbonneController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepenseController;
@@ -96,6 +97,11 @@ Route::middleware(['auth', 'setup', 'role:proprietaire,gerant'])->group(function
     // Production
     Route::get('/productions/historique', [ProductionController::class, 'historique'])->name('productions.historique');
     Route::resource('productions', ProductionController::class);
+
+    // Clients (module unifié : Livreurs, Clients revendeurs et Abonnés)
+    Route::get('/clients', [ClientsController::class, 'index'])->name('clients.index');
+    Route::get('/clients/ajouter', [ClientsController::class, 'create'])->name('clients.create');
+    Route::get('/clients/distribution-du-jour', [ClientsController::class, 'distribution'])->name('clients.distribution');
 
     // Livreurs — pages dédiées (avant le resource pour éviter les conflits)
     Route::get('/livreurs/{livreur}/attribuer', [LivreurController::class, 'attribuerForm'])->name('livreurs.attribuer.form');

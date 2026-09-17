@@ -21,6 +21,7 @@ class Livreur extends Model
         'telephone',
         'adresse',
         'actif',
+        'type',
         'boulangerie_id',
     ];
 
@@ -41,5 +42,12 @@ class Livreur extends Model
     public function versements(): HasMany
     {
         return $this->hasMany(Versement::class);
+    }
+
+    // "Livreur" et "Client" partagent la même mécanique — ce libellé ne sert
+    // qu'à l'affichage (badges, écrans d'attribution/règlement).
+    public function typeLabel(): string
+    {
+        return $this->type === 'client' ? 'Client' : 'Livreur';
     }
 }

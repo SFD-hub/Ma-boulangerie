@@ -14,21 +14,19 @@ use Illuminate\Validation\Rule;
 
 class LivreurController extends Controller
 {
-    public function index(): View
+    public function index(): RedirectResponse
     {
-        $boulangerie_id = auth()->user()->boulangerie_id;
-
-        $livreurs = Livreur::where('boulangerie_id', $boulangerie_id)
-            ->orderBy('actif', 'desc')
-            ->orderBy('nom')
-            ->get();
-
-        return view('livreurs.index', compact('livreurs'));
+        // La vraie liste vit désormais dans le module "Clients" unifié —
+        // cette route ne sert plus qu'à ne pas casser les liens "← Retour"
+        // existants (create/show/_form) qui pointent encore vers son nom.
+        return redirect()->route('clients.index', ['type' => 'livreur']);
     }
 
-    public function create(): View
+    public function create(): RedirectResponse
     {
-        return view('livreurs.create');
+        // Le formulaire d'ajout est désormais unique pour les 3 types
+        // (Livreur/Client/Abonné), dans le module "Clients".
+        return redirect()->route('clients.create');
     }
 
     public function store(Request $request): RedirectResponse
@@ -36,9 +34,11 @@ class LivreurController extends Controller
         $validated = $request->validate([
             'nom_complet' => 'required|string|max:255',
             'telephone'   => 'required|string|max:20',
+            'type'        => 'required|in:livreur,client',
         ], [
             'nom_complet.required' => 'Le nom est obligatoire.',
             'telephone.required'   => 'Le téléphone est obligatoire.',
+            'type.required'        => 'Le type est obligatoire.',
         ]);
 
         // Un seul champ "Prénom et nom" côté formulaire, pour aller plus vite
@@ -47,16 +47,17 @@ class LivreurController extends Controller
         // affichage "Prénom Nom", etc.).
         [$prenom, $nom] = $this->separerNomComplet($validated['nom_complet']);
 
-        Livreur::create([
+        $livreur = Livreur::create([
             'prenom'         => $prenom,
             'nom'            => $nom,
             'telephone'      => $validated['telephone'],
+            'type'           => $validated['type'],
             'actif'          => true,
             'boulangerie_id' => auth()->user()->boulangerie_id,
         ]);
 
-        return redirect()->route('livreurs.index')
-            ->with('success', 'Livreur créé.');
+        return redirect()->route('livreurs.show', $livreur)
+            ->with('success', ($validated['type'] === 'client' ? 'Client créé.' : 'Livreur créé.'));
     }
 
     /**
@@ -114,12 +115,13 @@ class LivreurController extends Controller
             'nom'       => 'required|string|max:255',
             'prenom'    => 'required|string|max:255',
             'telephone' => 'required|string|max:20',
+            'type'      => 'required|in:livreur,client',
         ]);
 
         $livreur->update($validated);
 
         return redirect()->route('livreurs.show', $livreur)
-            ->with('success', 'Livreur mis à jour.');
+            ->with('success', ($validated['type'] === 'client' ? 'Client mis à jour.' : 'Livreur mis à jour.'));
     }
 
     public function destroy(Livreur $livreur): RedirectResponse
