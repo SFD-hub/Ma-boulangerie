@@ -19,15 +19,9 @@
             @csrf
 
             <div class="form-group">
-                <label class="form-label">Prénom *</label>
-                <input class="form-input" type="text" name="prenom"
-                       value="{{ old('prenom') }}" placeholder="Ex : Aminata" required autofocus>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Nom *</label>
-                <input class="form-input" type="text" name="nom"
-                       value="{{ old('nom') }}" placeholder="Ex : Diallo" required>
+                <label class="form-label">Prénom et nom *</label>
+                <input class="form-input" type="text" name="nom_complet"
+                       value="{{ old('nom_complet') }}" placeholder="Ex : Aminata Diallo" required autofocus>
             </div>
 
             <div class="form-group">

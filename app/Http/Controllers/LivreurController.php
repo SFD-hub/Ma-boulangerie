@@ -34,22 +34,50 @@ class LivreurController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nom'       => 'required|string|max:255',
-            'prenom'    => 'required|string|max:255',
-            'telephone' => 'required|string|max:20',
+            'nom_complet' => 'required|string|max:255',
+            'telephone'   => 'required|string|max:20',
         ], [
-            'nom.required'       => 'Le nom est obligatoire.',
-            'prenom.required'    => 'Le prénom est obligatoire.',
-            'telephone.required' => 'Le téléphone est obligatoire.',
+            'nom_complet.required' => 'Le nom est obligatoire.',
+            'telephone.required'   => 'Le téléphone est obligatoire.',
         ]);
 
-        Livreur::create(array_merge($validated, [
+        // Un seul champ "Prénom et nom" côté formulaire, pour aller plus vite
+        // à la saisie -- éclaté ici pour rester compatible avec le reste de
+        // l'application, qui distingue prenom/nom partout ailleurs (avatar,
+        // affichage "Prénom Nom", etc.).
+        [$prenom, $nom] = $this->separerNomComplet($validated['nom_complet']);
+
+        Livreur::create([
+            'prenom'         => $prenom,
+            'nom'            => $nom,
+            'telephone'      => $validated['telephone'],
             'actif'          => true,
             'boulangerie_id' => auth()->user()->boulangerie_id,
-        ]));
+        ]);
 
         return redirect()->route('livreurs.index')
             ->with('success', 'Livreur créé.');
+    }
+
+    /**
+     * Sépare un nom complet saisi en un seul champ en [prénom, nom] : le
+     * premier mot est le prénom, tout le reste forme le nom (gère les noms
+     * composés comme "Amadou Moussa Diallo" -> prénom "Amadou", nom "Moussa Diallo").
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function separerNomComplet(string $nomComplet): array
+    {
+        $parts = preg_split('/\s+/', trim($nomComplet), 2);
+
+        // Un seul mot saisi : la colonne "nom" est obligatoire en base
+        // (contrairement à "prénom", nullable) -- on l'y met donc plutôt
+        // que de laisser "nom" vide.
+        if (count($parts) === 1) {
+            return ['', $parts[0]];
+        }
+
+        return [$parts[0], $parts[1]];
     }
 
     public function show(Livreur $livreur): View

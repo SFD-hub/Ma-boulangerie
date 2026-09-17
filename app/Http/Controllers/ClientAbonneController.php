@@ -29,22 +29,30 @@ class ClientAbonneController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nom'       => 'required|string|max:255',
-            'prenom'    => 'required|string|max:255',
-            'telephone' => 'required|string|max:20',
-            'actif'     => 'sometimes|boolean',
+            'nom_complet' => 'required|string|max:255',
+            'telephone'   => 'required|string|max:20',
+            'actif'       => 'sometimes|boolean',
         ], [
-            'nom.required'       => 'Le nom est obligatoire.',
-            'prenom.required'    => 'Le prénom est obligatoire.',
-            'telephone.required' => 'Le téléphone est obligatoire.',
+            'nom_complet.required' => 'Le nom est obligatoire.',
+            'telephone.required'   => 'Le téléphone est obligatoire.',
         ]);
+
+        // Un seul champ "Prénom et nom" côté formulaire -- éclaté ici pour
+        // rester compatible avec le reste de l'application, qui distingue
+        // prenom/nom partout ailleurs.
+        $parts  = preg_split('/\s+/', trim($validated['nom_complet']), 2);
+        $prenom = count($parts) > 1 ? $parts[0] : '';
+        $nom    = count($parts) > 1 ? $parts[1] : $parts[0];
 
         $boulangerie_id = auth()->user()->boulangerie_id;
 
-        ClientAbonne::create(array_merge($validated, [
+        ClientAbonne::create([
+            'prenom'         => $prenom,
+            'nom'            => $nom,
+            'telephone'      => $validated['telephone'],
             'actif'          => $validated['actif'] ?? true,
             'boulangerie_id' => $boulangerie_id,
-        ]));
+        ]);
 
         return redirect()->route('clients-abonnes.index')
             ->with('success', 'Abonné créé avec succès.');
