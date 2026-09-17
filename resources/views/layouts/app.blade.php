@@ -1322,6 +1322,11 @@
             function positionDropdown(detailsEl) {
                 var dropdown = getDropdown(detailsEl);
                 if (!dropdown) return;
+                // Ne concerne que les menus "···" (leur contenu est déjà en
+                // position:absolute dans le balisage) -- pas les <details>
+                // "accordéon" ordinaires (ex: liste des paiements d'une
+                // facture), qui doivent rester dans le flux normal de la page.
+                if (getComputedStyle(dropdown).position !== 'absolute') return;
                 // 1. Placer en fixed + invisible → force un flush de layout synchrone
                 dropdown.style.position   = 'fixed';
                 dropdown.style.visibility = 'hidden';
@@ -1350,8 +1355,22 @@
             document.addEventListener('click', function(e) {
                 var d = e.target.closest('details');
                 closeAllDetails(d);
-                if (d && d.open) positionDropdown(d);
             });
+            // Le clic qui ouvre un <details> bascule son attribut "open" en
+            // action par defaut du navigateur, APRES que ce gestionnaire de
+            // clic (au-dessus) se soit deja execute -- d.open y est encore a
+            // son ancienne valeur (fermee) au moment du clic d'ouverture.
+            // Positionner le menu devait donc se faire sur l'evenement
+            // "toggle" (qui ne bulle pas, d'ou capture=true), le seul a
+            // refleter l'etat reellement a jour -- sinon le menu gardait sa
+            // derniere position connue (ou la position par defaut, en haut a
+            // gauche) au premier clic, ce qui le faisait deborder en bas
+            // d'ecran sur la derniere carte d'une liste.
+            document.addEventListener('toggle', function(e) {
+                if (e.target.tagName && e.target.tagName.toLowerCase() === 'details' && e.target.open) {
+                    positionDropdown(e.target);
+                }
+            }, true);
             document.addEventListener('scroll', function() {
                 closeAllDetails(null);
             }, true);
