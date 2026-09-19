@@ -47,27 +47,29 @@
             <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">pains</div>
         </a>
 
-        {{-- Stock Farine — fond orange/beige --}}
-        <div style="background:#FFEDD5;border-radius:18px;padding:18px 14px{{ $farineStock <= $farineSeuil && $farineSeuil > 0 ? ';outline:2px solid #FBBF24;outline-offset:-2px' : '' }}">
+        {{-- Encaissé du jour — fond orange/beige --}}
+        <a href="{{ route('caisse.index') }}"
+           style="background:#FFEDD5;border-radius:18px;padding:18px 14px;text-decoration:none;display:block">
             <div style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:10px;line-height:1.3">
-                Stock Farine
+                Encaissé du jour
             </div>
-            <div style="font-size:34px;font-weight:800;line-height:1;color:{{ $farineStock <= $farineSeuil && $farineSeuil > 0 ? '#EF4444' : '#111827' }}">
-                {{ \App\Support\Nombre::qte($farineStock) }}
+            <div style="font-size:34px;font-weight:800;color:#111827;line-height:1">
+                {{ number_format($encaisseJour, 0, ',', ' ') }}
             </div>
-            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">sacs</div>
-        </div>
+            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">FCFA</div>
+        </a>
 
-        {{-- Stock Levure — fond violet --}}
-        <div style="background:#EDE9FE;border-radius:18px;padding:18px 14px{{ $levureStock <= $levureSeuil && $levureSeuil > 0 ? ';outline:2px solid #FBBF24;outline-offset:-2px' : '' }}">
+        {{-- Dépenses du jour — fond violet --}}
+        <a href="{{ route('caisse.index') }}"
+           style="background:#EDE9FE;border-radius:18px;padding:18px 14px;text-decoration:none;display:block">
             <div style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:10px;line-height:1.3">
-                Stock Levure
+                Dépenses du jour
             </div>
-            <div style="font-size:34px;font-weight:800;line-height:1;color:{{ $levureStock <= $levureSeuil && $levureSeuil > 0 ? '#EF4444' : '#111827' }}">
-                {{ \App\Support\Nombre::qte($levureStock) }}
+            <div style="font-size:34px;font-weight:800;color:#111827;line-height:1">
+                {{ number_format($depenseJour, 0, ',', ' ') }}
             </div>
-            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">paquets</div>
-        </div>
+            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">FCFA</div>
+        </a>
 
     </div>
 

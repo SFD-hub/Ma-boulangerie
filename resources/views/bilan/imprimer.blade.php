@@ -105,6 +105,10 @@
             <span class="label">Factures abonnés payées</span>
             <span class="amount">{{ number_format($facturesAbonnes, 0, ',', ' ') }} FCFA</span>
         </div>
+        <div class="row">
+            <span class="label">Ventes Dépôt</span>
+            <span class="amount">{{ number_format($ventesDepot, 0, ',', ' ') }} FCFA</span>
+        </div>
         <div class="row total-rec">
             <span class="label">Total recettes</span>
             <span class="amount">{{ number_format($totalRecettes, 0, ',', ' ') }} FCFA</span>

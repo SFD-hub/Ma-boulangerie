@@ -37,6 +37,11 @@ class Produit extends Model
         return $this->hasMany(Distribution::class);
     }
 
+    public function depotVentes(): HasMany
+    {
+        return $this->hasMany(DepotVente::class);
+    }
+
     // Produit présélectionné dans les formulaires de production/attribution :
     // "Pain" reste le cas d'usage habituel, les autres types sont un choix
     // volontaire de l'utilisateur.
@@ -50,10 +55,11 @@ class Produit extends Model
     }
 
     /**
-     * Pains de ce produit encore disponibles pour distribution : tout ce qui
-     * a été produit, moins tout ce qui a déjà été distribué (tous livreurs,
-     * toutes dates confondues) — on ne peut jamais distribuer plus de pains
-     * que ce que la production a réellement fourni.
+     * Pains de ce produit encore disponibles : tout ce qui a été produit,
+     * moins tout ce qui a déjà été distribué (livreurs/clients) et vendu au
+     * Dépôt (toutes dates confondues) — le Dépôt puise dans le même stock
+     * physique que les livreurs, donc les deux canaux doivent se déduire
+     * mutuellement pour ne jamais dépasser ce que la production a fourni.
      *
      * @param  int|null  $exclureDistributionId  Distribution à ignorer dans le
      *         total déjà distribué (modification d'une distribution
@@ -69,6 +75,8 @@ class Produit extends Model
             $totalDistribueQuery->where('id', '!=', $exclureDistributionId);
         }
 
-        return (int) $totalProduit - (int) $totalDistribueQuery->sum('nombre_pains');
+        $totalDepot = $this->depotVentes()->sum('quantite');
+
+        return (int) $totalProduit - (int) $totalDistribueQuery->sum('nombre_pains') - (int) $totalDepot;
     }
 }

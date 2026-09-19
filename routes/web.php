@@ -10,9 +10,11 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\BilanController;
 use App\Http\Controllers\ClientAbonneController;
 use App\Http\Controllers\ClientsController;
+use App\Http\Controllers\CaisseController;
 use App\Http\Controllers\ConsommationAbonneController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepenseController;
+use App\Http\Controllers\DepotController;
 use App\Http\Controllers\DistributionController;
 use App\Http\Controllers\FactureController;
 use App\Http\Controllers\GerantController;
@@ -102,6 +104,14 @@ Route::middleware(['auth', 'setup', 'role:proprietaire,gerant'])->group(function
     Route::get('/clients', [ClientsController::class, 'index'])->name('clients.index');
     Route::get('/clients/ajouter', [ClientsController::class, 'create'])->name('clients.create');
     Route::get('/clients/distribution-du-jour', [ClientsController::class, 'distribution'])->name('clients.distribution');
+
+    // Caisse du jour (encaissé + dépenses regroupés par journée)
+    Route::get('/caisse', [CaisseController::class, 'index'])->name('caisse.index');
+
+    // Dépôt (vente boutique en direct, distincte de la consignation Livreur/Client)
+    Route::get('/depot', [DepotController::class, 'index'])->name('depot.index');
+    Route::post('/depot', [DepotController::class, 'store'])->name('depot.store');
+    Route::delete('/depot/{depotVente}', [DepotController::class, 'destroy'])->name('depot.destroy');
 
     // Livreurs — pages dédiées (avant le resource pour éviter les conflits)
     Route::get('/livreurs/{livreur}/attribuer', [LivreurController::class, 'attribuerForm'])->name('livreurs.attribuer.form');

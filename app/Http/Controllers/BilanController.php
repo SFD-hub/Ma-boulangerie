@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BilanFinancier;
 use App\Models\Depense;
+use App\Models\DepotVente;
 use App\Models\PaiementFacture;
 use App\Models\Versement;
 use Carbon\Carbon;
@@ -53,6 +54,7 @@ class BilanController extends Controller
             [
                 'versements_livreurs' => $data['versementsLivreurs'],
                 'factures_abonnes'    => $data['facturesAbonnes'],
+                'ventes_depot'        => $data['ventesDepot'],
                 'recettes_total'      => $data['totalRecettes'],
                 'achat_farine'        => $data['achatFarine'],
                 'achat_levure'        => $data['achatLevure'],
@@ -113,6 +115,7 @@ class BilanController extends Controller
 
         $versementsLivreurs = (float) $bilan->versements_livreurs;
         $facturesAbonnes    = (float) $bilan->factures_abonnes;
+        $ventesDepot        = (float) $bilan->ventes_depot;
         $totalRecettes      = (float) $bilan->recettes_total;
         $achatFarine        = (float) $bilan->achat_farine;
         $achatLevure        = (float) $bilan->achat_levure;
@@ -129,7 +132,7 @@ class BilanController extends Controller
 
         return view('bilan.imprimer', compact(
             'mois', 'annee', 'moisNom', 'boulangerieName',
-            'versementsLivreurs', 'facturesAbonnes', 'totalRecettes',
+            'versementsLivreurs', 'facturesAbonnes', 'ventesDepot', 'totalRecettes',
             'achatFarine', 'achatLevure', 'salaireGerant', 'salaireEmploye',
             'eau', 'electricite', 'carburant', 'transport', 'reparation', 'autres',
             'totalDepenses', 'benefice'
@@ -154,7 +157,11 @@ class BilanController extends Controller
         )->whereBetween('date_paiement', [$debut, $fin])
          ->sum('montant');
 
-        $totalRecettes = $versementsLivreurs + $facturesAbonnes;
+        $ventesDepot = (float) DepotVente::where('boulangerie_id', $boulangerie_id)
+            ->whereBetween('date_vente', [$debut, $fin])
+            ->sum('montant');
+
+        $totalRecettes = $versementsLivreurs + $facturesAbonnes + $ventesDepot;
 
         // ── DÉPENSES PAR CATÉGORIE ─────────────────────────────────────────
         $d = Depense::where('boulangerie_id', $boulangerie_id)
@@ -181,7 +188,7 @@ class BilanController extends Controller
         $benefice = $totalRecettes - $totalDepenses;
 
         return compact(
-            'versementsLivreurs', 'facturesAbonnes', 'totalRecettes',
+            'versementsLivreurs', 'facturesAbonnes', 'ventesDepot', 'totalRecettes',
             'achatFarine', 'achatLevure', 'salaireGerant', 'salaireEmploye',
             'eau', 'electricite', 'carburant', 'transport', 'reparation', 'autres',
             'totalDepenses', 'benefice'

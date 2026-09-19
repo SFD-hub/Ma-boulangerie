@@ -720,6 +720,10 @@
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     Dépenses
                 </a>
+                <a href="{{ route('depot.index') }}" class="sidebar-link {{ request()->routeIs('depot.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9.75L4.5 4.5h15L21 9.75m-18 0v9a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-9m-18 0h18M9 13.5a1.5 1.5 0 003 0"/></svg>
+                    Dépôt
+                </a>
                 <a href="{{ route('produits.index') }}" class="sidebar-link {{ request()->routeIs('produits.*') ? 'active' : '' }}">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                     Produits
@@ -1062,6 +1066,15 @@
                           d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 Dépenses
+            </a>
+
+            <a href="{{ route('depot.index') }}" class="more-item" onclick="closeMore()"
+               style="{{ request()->routeIs('depot.*') ? 'color:var(--orange)' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M3 9.75L4.5 4.5h15L21 9.75m-18 0v9a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-9m-18 0h18M9 13.5a1.5 1.5 0 003 0"/>
+                </svg>
+                Dépôt
             </a>
 
             @php $userRole = auth()->user()?->role?->nom; @endphp

@@ -11,6 +11,7 @@ use App\Models\MatierePremiere;
 use App\Models\Production;
 use App\Models\User;
 use App\Models\Versement;
+use App\Support\CaisseDuJour;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
@@ -61,15 +62,19 @@ class DashboardController extends Controller
         // Distribution du jour (6 dernières, livreurs+clients et abonnés confondus)
         $distributionsJour = $this->derniereDistribution($boulangerie_id, $today);
 
+        // Caisse du jour (même agrégation que la page dédiée, pour ne jamais
+        // afficher un chiffre différent entre l'accueil et /caisse)
+        $caisse        = CaisseDuJour::resume($boulangerie_id, $today->toDateString());
+        $encaisseJour  = $caisse['totalEncaisse'];
+        $depenseJour   = $caisse['totalDepense'];
+
         return view('dashboard.index', compact(
             'productionJour',
             'painsDistribues',
-            'farineStock',
-            'levureStock',
-            'farineSeuil',
-            'levureSeuil',
             'alertes',
-            'distributionsJour'
+            'distributionsJour',
+            'encaisseJour',
+            'depenseJour'
         ));
     }
 

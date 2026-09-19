@@ -42,6 +42,13 @@
             </span>
         </div>
 
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #E5E7EB">
+            <span style="font-size:14px;color:#6B7280">Ventes Dépôt</span>
+            <span style="font-size:14px;font-weight:700;color:#111827">
+                {{ number_format($ventesDepot, 0, ',', ' ') }}&nbsp;FCFA
+            </span>
+        </div>
+
         <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#F0FDF4">
             <span style="font-size:14px;font-weight:700;color:#065F46">Total recettes</span>
             <span style="font-size:15px;font-weight:800;color:#059669">

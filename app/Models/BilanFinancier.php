@@ -12,7 +12,7 @@ class BilanFinancier extends Model
 
     protected $fillable = [
         'boulangerie_id', 'mois', 'annee',
-        'versements_livreurs', 'factures_abonnes', 'recettes_total',
+        'versements_livreurs', 'factures_abonnes', 'ventes_depot', 'recettes_total',
         'achat_farine', 'achat_levure',
         'salaire_gerant', 'salaire_employe',
         'eau', 'electricite', 'carburant', 'transport', 'reparation', 'autres',
@@ -26,6 +26,7 @@ class BilanFinancier extends Model
             'annee'               => 'integer',
             'versements_livreurs' => 'decimal:2',
             'factures_abonnes'    => 'decimal:2',
+            'ventes_depot'        => 'decimal:2',
             'recettes_total'      => 'decimal:2',
             'achat_farine'        => 'decimal:2',
             'achat_levure'        => 'decimal:2',
