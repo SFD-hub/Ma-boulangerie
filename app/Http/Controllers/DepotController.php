@@ -80,7 +80,7 @@ class DepotController extends Controller
 
         ActivityLog::record(
             'vente_depot',
-            auth()->user()->name . ' a enregistré une vente Dépôt de ' . $validated['quantite'] . ' pain' . ($validated['quantite'] > 1 ? 's' : '') . ' (' . number_format($validated['montant'], 0, ',', ' ') . ' FCFA)',
+            auth()->user()->name . ' a enregistré une vente Boutique de ' . $validated['quantite'] . ' pain' . ($validated['quantite'] > 1 ? 's' : '') . ' (' . number_format($validated['montant'], 0, ',', ' ') . ' FCFA)',
             $boulangerie_id,
             'vente'
         );

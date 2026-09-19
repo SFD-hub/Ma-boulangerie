@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dépôt')
+@section('title', 'Boutique')
 
 @section('content')
 
@@ -12,7 +12,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
             </svg>
         </a>
-        <span style="font-size:17px;font-weight:700;color:#111827">Dépôt</span>
+        <span style="font-size:17px;font-weight:700;color:#111827">Boutique</span>
         <div style="width:36px"></div>
     </div>
 

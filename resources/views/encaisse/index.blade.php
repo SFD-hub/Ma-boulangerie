@@ -64,7 +64,7 @@
                         🏪
                     </div>
                     <div class="list-item-body">
-                        <div class="list-item-name">Dépôt — total du jour</div>
+                        <div class="list-item-name">Boutique — total du jour</div>
                         <div class="list-item-sub">
                             {{ $depotJour['quantite'] }} pain{{ $depotJour['quantite'] > 1 ? 's' : '' }} vendu{{ $depotJour['quantite'] > 1 ? 's' : '' }}
                         </div>
