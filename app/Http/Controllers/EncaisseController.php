@@ -7,7 +7,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class CaisseController extends Controller
+class EncaisseController extends Controller
 {
     public function index(Request $request): View
     {
@@ -18,6 +18,11 @@ class CaisseController extends Controller
 
         $resume = CaisseDuJour::resume($boulangerie_id, $date);
 
-        return view('caisse.index', array_merge(['date' => $date], $resume));
+        return view('encaisse.index', [
+            'date'           => $date,
+            'encaissements'  => $resume['encaissements'],
+            'depotJour'      => $resume['depotJour'],
+            'totalEncaisse'  => $resume['totalEncaisse'],
+        ]);
     }
 }

@@ -10,7 +10,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\BilanController;
 use App\Http\Controllers\ClientAbonneController;
 use App\Http\Controllers\ClientsController;
-use App\Http\Controllers\CaisseController;
+use App\Http\Controllers\EncaisseController;
 use App\Http\Controllers\ConsommationAbonneController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepenseController;
@@ -105,8 +105,8 @@ Route::middleware(['auth', 'setup', 'role:proprietaire,gerant'])->group(function
     Route::get('/clients/ajouter', [ClientsController::class, 'create'])->name('clients.create');
     Route::get('/clients/distribution-du-jour', [ClientsController::class, 'distribution'])->name('clients.distribution');
 
-    // Caisse du jour (encaissé + dépenses regroupés par journée)
-    Route::get('/caisse', [CaisseController::class, 'index'])->name('caisse.index');
+    // Encaissé du jour (versements, paiements abonnés, ventes Dépôt)
+    Route::get('/encaisse', [EncaisseController::class, 'index'])->name('encaisse.index');
 
     // Dépôt (vente boutique en direct, distincte de la consignation Livreur/Client)
     Route::get('/depot', [DepotController::class, 'index'])->name('depot.index');
@@ -165,6 +165,7 @@ Route::middleware(['auth', 'setup', 'role:proprietaire,gerant'])->group(function
 
     // Dépenses
     Route::get('/depenses/historique', [DepenseController::class, 'historique'])->name('depenses.historique');
+    Route::get('/depenses/du-jour', [DepenseController::class, 'jour'])->name('depenses.jour');
     Route::resource('depenses', DepenseController::class);
 
     // Mon compte (accessible propriétaire et gérant, contrairement à /parametres)

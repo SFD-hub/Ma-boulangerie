@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Depense;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -90,6 +91,22 @@ class DepenseController extends Controller
             ->withQueryString();
 
         return view('depenses.historique', compact('depenses', 'totalGlobal'));
+    }
+
+    public function jour(Request $request): View
+    {
+        $boulangerie_id = auth()->user()->boulangerie_id;
+
+        $date = $request->query('date');
+        $date = ($date && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) ? $date : Carbon::today()->toDateString();
+
+        $depenses = Depense::where('boulangerie_id', $boulangerie_id)
+            ->whereDate('date_depense', $date)
+            ->get();
+
+        $totalDepense = (float) $depenses->sum('montant');
+
+        return view('depenses.jour', compact('date', 'depenses', 'totalDepense'));
     }
 
     public function create(): View

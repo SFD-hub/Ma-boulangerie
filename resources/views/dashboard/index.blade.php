@@ -48,7 +48,7 @@
         </a>
 
         {{-- Encaissé du jour — fond orange/beige --}}
-        <a href="{{ route('caisse.index') }}"
+        <a href="{{ route('encaisse.index') }}"
            style="background:#FFEDD5;border-radius:18px;padding:18px 14px;text-decoration:none;display:block">
             <div style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:10px;line-height:1.3">
                 Encaissé du jour
@@ -60,7 +60,7 @@
         </a>
 
         {{-- Dépenses du jour — fond violet --}}
-        <a href="{{ route('caisse.index') }}"
+        <a href="{{ route('depenses.jour') }}"
            style="background:#EDE9FE;border-radius:18px;padding:18px 14px;text-decoration:none;display:block">
             <div style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:10px;line-height:1.3">
                 Dépenses du jour
