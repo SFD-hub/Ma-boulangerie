@@ -280,6 +280,7 @@
         .badge-gray   { background: #F3F4F6; color: var(--text2); }
         .badge-blue   { background: var(--blue-bg); color: #1D4ED8; }
         .badge-purple { background: #F5F3FF; color: #6D28D9; }
+        .badge-yellow { background: #FEF3C7; color: #92400E; }
 
         /* ── List items ── */
         .list-item {

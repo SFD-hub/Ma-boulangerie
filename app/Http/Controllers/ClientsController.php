@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ClientAbonne;
 use App\Models\ConsommationAbonne;
+use App\Models\DepotVente;
 use App\Models\Distribution;
 use App\Models\Livreur;
 use App\Models\Production;
@@ -94,6 +95,12 @@ class ClientsController extends Controller
             ->groupBy('client_abonne_id')
             ->pluck('total', 'client_abonne_id');
 
+        // Boutique : vente directe, sans "client" nommé — une seule ligne
+        // agrégée pour la journée (même traitement que sur Encaissé du jour).
+        $totalDepot = (float) DepotVente::where('boulangerie_id', $boulangerie_id)
+            ->whereDate('date_vente', $date)
+            ->sum('quantite_equivalente');
+
         $lignes = $livreurs
             ->filter(fn (Livreur $l) => $quantiteParLivreur->has($l->id))
             ->map(fn (Livreur $l) => [
@@ -112,16 +119,26 @@ class ClientsController extends Controller
                         'route'     => route('clients-abonnes.show', $c),
                         'quantite'  => (int) $quantiteParAbonne[$c->id],
                     ])
-            )
-            // Le plus gros preneur en premier — c'est ce qui rend ce rapport
-            // utile, contrairement au répertoire (index) trié alphabétiquement.
-            ->sortByDesc('quantite')
-            ->values();
+            );
+
+        if ($totalDepot > 0) {
+            $lignes = $lignes->concat([[
+                'nom'       => 'Boutique',
+                'type'      => 'boutique',
+                'typeLabel' => 'Boutique',
+                'route'     => route('depot.index', ['date' => $date]),
+                'quantite'  => $totalDepot,
+            ]]);
+        }
+
+        // Le plus gros preneur en premier — c'est ce qui rend ce rapport
+        // utile, contrairement au répertoire (index) trié alphabétiquement.
+        $lignes = $lignes->sortByDesc('quantite')->values();
 
         $totalProduit   = (int) Production::where('boulangerie_id', $boulangerie_id)
             ->where('date_production', $date)
             ->sum('nombre_pains_produits');
-        $totalDistribue = (int) $quantiteParLivreur->sum() + (int) $quantiteParAbonne->sum();
+        $totalDistribue = (int) $quantiteParLivreur->sum() + (int) $quantiteParAbonne->sum() + $totalDepot;
 
         return view('clients.distribution', [
             'date'           => $date,

@@ -6,6 +6,7 @@ use App\Models\AchatMatierePremiere;
 use App\Models\ClientAbonne;
 use App\Models\ConsommationAbonne;
 use App\Models\Depense;
+use App\Models\DepotVente;
 use App\Models\Distribution;
 use App\Models\MatierePremiere;
 use App\Models\Production;
@@ -28,13 +29,18 @@ class DashboardController extends Controller
             ->whereDate('date_production', $today)
             ->sum('nombre_pains_produits');
 
-        // Pains distribués/consommés aujourd'hui (livreurs+clients ET abonnés)
-        $painsDistribues = (int) Distribution::whereHas('livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
+        // Pains distribués/consommés/vendus aujourd'hui (livreurs+clients,
+        // abonnés, ET Boutique — la Boutique peut vendre des fractions de
+        // pain, d'où l'addition en float plutôt qu'en int).
+        $painsDistribues = (float) Distribution::whereHas('livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
                 ->whereDate('date_distribution', $today)
                 ->sum('nombre_pains')
-            + (int) ConsommationAbonne::whereHas('clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
+            + (float) ConsommationAbonne::whereHas('clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
                 ->whereDate('date_consommation', $today)
-                ->sum('quantite');
+                ->sum('quantite')
+            + (float) DepotVente::where('boulangerie_id', $boulangerie_id)
+                ->whereDate('date_vente', $today)
+                ->sum('quantite_equivalente');
 
         // Stock farine (en sacs)
         $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)

@@ -42,7 +42,7 @@
                 Pains distribués
             </div>
             <div style="font-size:34px;font-weight:800;color:#111827;line-height:1">
-                {{ number_format($painsDistribues, 0, ',', ' ') }}
+                {{ \App\Support\Nombre::qte($painsDistribues) }}
             </div>
             <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">pains</div>
         </a>

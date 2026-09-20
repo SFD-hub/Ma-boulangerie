@@ -32,7 +32,7 @@
                 Distribué
             </div>
             <div style="font-size:34px;font-weight:800;color:#111827;line-height:1">
-                {{ number_format($totalDistribue, 0, ',', ' ') }}
+                {{ \App\Support\Nombre::qte($totalDistribue) }}
             </div>
             <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">pains</div>
         </div>
@@ -51,20 +51,25 @@
             @foreach($lignes as $l)
                 @php
                     $badgeClass = match($l['type']) {
-                        'livreur' => 'badge-blue',
-                        'client'  => 'badge-orange',
-                        default   => 'badge-purple',
+                        'livreur'  => 'badge-blue',
+                        'client'   => 'badge-orange',
+                        'boutique' => 'badge-yellow',
+                        default    => 'badge-purple',
                     };
                 @endphp
                 <a href="{{ $l['route'] }}" class="list-item" style="text-decoration:none">
-                    <div class="avatar">{{ strtoupper(substr($l['nom'], 0, 1)) }}</div>
+                    @if($l['type'] === 'boutique')
+                        <div style="width:44px;height:44px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏪</div>
+                    @else
+                        <div class="avatar">{{ strtoupper(substr($l['nom'], 0, 1)) }}</div>
+                    @endif
                     <div class="list-item-body">
                         <div class="list-item-name">{{ $l['nom'] }}</div>
                     </div>
                     <div class="list-item-right" style="display:flex;align-items:center;gap:8px">
                         <span class="badge {{ $badgeClass }}">{{ $l['typeLabel'] }}</span>
                         <span style="font-size:14px;font-weight:700;color:#111827">
-                            {{ $l['quantite'] }} pain{{ $l['quantite'] > 1 ? 's' : '' }}
+                            {{ \App\Support\Nombre::qte($l['quantite']) }} pain{{ $l['quantite'] > 1 ? 's' : '' }}
                         </span>
                     </div>
                 </a>
