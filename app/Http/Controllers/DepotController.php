@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\DepotVente;
 use App\Models\Produit;
+use App\Support\Nombre;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -32,7 +33,7 @@ class DepotController extends Controller
             ->get();
         $defaultProduitId = Produit::defaultIdPour($boulangerie_id);
 
-        $totalQuantite = (int) $ventes->sum('quantite');
+        $totalQuantite = (float) $ventes->sum('quantite_equivalente');
         $totalMontant  = (float) $ventes->sum('montant');
 
         return view('depot.index', compact(
@@ -45,48 +46,63 @@ class DepotController extends Controller
         $boulangerie_id = auth()->user()->boulangerie_id;
 
         $validated = $request->validate([
-            'produit_id' => ['required', Rule::exists('produits', 'id')->where('boulangerie_id', $boulangerie_id)],
-            'date_vente' => 'required|date|before_or_equal:today',
-            'quantite'   => 'required|integer|min:1',
-            'montant'    => 'required|numeric|min:0.01',
+            'produit_id'     => ['required', Rule::exists('produits', 'id')->where('boulangerie_id', $boulangerie_id)],
+            'date_vente'     => 'required|date|before_or_equal:today',
+            'nombre_entiers' => 'nullable|integer|min:0',
+            'nombre_moities' => 'nullable|integer|min:0',
+            'nombre_tiers'   => 'nullable|integer|min:0',
+            'montant'        => 'required|numeric|min:0.01',
         ], [
             'produit_id.required'        => 'Le produit est obligatoire.',
             'date_vente.required'        => 'La date est obligatoire.',
             'date_vente.before_or_equal' => 'La date ne peut pas être dans le futur.',
-            'quantite.required'          => 'La quantité est obligatoire.',
-            'quantite.min'               => 'La quantité doit être au moins 1.',
             'montant.required'           => 'Le montant est obligatoire.',
             'montant.min'                => 'Le montant doit être supérieur à 0.',
         ]);
 
+        $entiers = (int) ($validated['nombre_entiers'] ?? 0);
+        $moities = (int) ($validated['nombre_moities'] ?? 0);
+        $tiers   = (int) ($validated['nombre_tiers'] ?? 0);
+
+        if ($entiers + $moities + $tiers === 0) {
+            return redirect()->back()->withInput()->with('error',
+                'Indiquez au moins un pain vendu (entier, moitié ou tiers).'
+            );
+        }
+
+        $quantiteEquivalente = round($entiers + $moities * 0.5 + $tiers / 3, 2);
+
         $produit    = Produit::findOrFail($validated['produit_id']);
         $disponible = $produit->painsDisponibles();
 
-        if ($validated['quantite'] > $disponible) {
+        if (round($quantiteEquivalente * 100) > round($disponible * 100)) {
             $reste = max(0, $disponible);
             return redirect()->back()->withInput()->with('error',
-                'Il ne reste que ' . $reste . ' pain' . ($reste > 1 ? 's' : '')
+                'Il ne reste que ' . Nombre::qte($reste) . ' pain' . ($reste > 1 ? 's' : '')
                 . ' disponible' . ($reste > 1 ? 's' : '') . ' pour « ' . $produit->nom . ' ».'
             );
         }
 
-        DepotVente::create([
-            'boulangerie_id' => $boulangerie_id,
-            'produit_id'     => $validated['produit_id'],
-            'date_vente'     => $validated['date_vente'],
-            'quantite'       => $validated['quantite'],
-            'montant'        => $validated['montant'],
+        $vente = DepotVente::create([
+            'boulangerie_id'       => $boulangerie_id,
+            'produit_id'           => $validated['produit_id'],
+            'date_vente'           => $validated['date_vente'],
+            'nombre_entiers'       => $entiers,
+            'nombre_moities'       => $moities,
+            'nombre_tiers'         => $tiers,
+            'quantite_equivalente' => $quantiteEquivalente,
+            'montant'              => $validated['montant'],
         ]);
 
         ActivityLog::record(
             'vente_depot',
-            auth()->user()->name . ' a enregistré une vente Boutique de ' . $validated['quantite'] . ' pain' . ($validated['quantite'] > 1 ? 's' : '') . ' (' . number_format($validated['montant'], 0, ',', ' ') . ' FCFA)',
+            auth()->user()->name . ' a enregistré une vente Boutique (' . $vente->descriptionPieces() . ') pour ' . number_format($validated['montant'], 0, ',', ' ') . ' FCFA',
             $boulangerie_id,
             'vente'
         );
 
         return redirect()->route('depot.index', ['date' => $validated['date_vente']])
-            ->with('success', 'Vente de ' . $validated['quantite'] . ' pain' . ($validated['quantite'] > 1 ? 's' : '') . ' enregistrée.');
+            ->with('success', 'Vente enregistrée (' . $vente->descriptionPieces() . ').');
     }
 
     public function destroy(DepotVente $depotVente): RedirectResponse

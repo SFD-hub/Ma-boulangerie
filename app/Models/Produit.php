@@ -66,17 +66,21 @@ class Produit extends Model
      *         existante : sa propre quantité ne doit pas se compter contre
      *         elle-même).
      */
-    public function painsDisponibles(?int $exclureDistributionId = null): int
+    public function painsDisponibles(?int $exclureDistributionId = null): float
     {
-        $totalProduit = $this->productions()->sum('nombre_pains_produits');
+        $totalProduit = (int) $this->productions()->sum('nombre_pains_produits');
 
         $totalDistribueQuery = $this->distributions();
         if ($exclureDistributionId) {
             $totalDistribueQuery->where('id', '!=', $exclureDistributionId);
         }
+        $totalDistribue = (int) $totalDistribueQuery->sum('nombre_pains');
 
-        $totalDepot = $this->depotVentes()->sum('quantite');
+        // Le Dépôt peut vendre des fractions de pain (entier/moitié/tiers) —
+        // c'est la seule source de décimales dans ce calcul, l'attribution et
+        // la production restent toujours en pains entiers.
+        $totalDepot = (float) $this->depotVentes()->sum('quantite_equivalente');
 
-        return (int) $totalProduit - (int) $totalDistribueQuery->sum('nombre_pains') - (int) $totalDepot;
+        return round($totalProduit - $totalDistribue - $totalDepot, 2);
     }
 }

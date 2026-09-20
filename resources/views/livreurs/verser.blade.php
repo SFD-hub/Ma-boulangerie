@@ -80,7 +80,11 @@
                     @php
                         $dpAVersement    = $distributionPreselectionnee->versement !== null;
                         $dpReliquat      = (float) $distributionPreselectionnee->reliquat;
-                        $dpInvendusExist = $distributionPreselectionnee->nombre_invendus ?? '';
+                        // Repli sur l'ancien compteur entier pour une distribution
+                        // réglée avant l'introduction de la répartition par pièce.
+                        $dpEntiersExist = $distributionPreselectionnee->entiers_invendus ?? $distributionPreselectionnee->nombre_invendus ?? 0;
+                        $dpMoitiesExist = $distributionPreselectionnee->moities_invendus ?? 0;
+                        $dpTiersExist   = $distributionPreselectionnee->tiers_invendus ?? 0;
                     @endphp
                     <div style="margin-bottom:18px">
                         <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">
@@ -91,7 +95,9 @@
                              data-prix="{{ $distributionPreselectionnee->prix_pain ?? $prixPain }}"
                              data-has-versement="{{ $dpAVersement ? 1 : 0 }}"
                              data-reliquat-actuel="{{ $dpReliquat }}"
-                             data-invendus-existants="{{ $dpInvendusExist }}"
+                             data-entiers-existants="{{ $dpEntiersExist }}"
+                             data-moities-existants="{{ $dpMoitiesExist }}"
+                             data-tiers-existants="{{ $dpTiersExist }}"
                              data-label="{{ $distributionPreselectionnee->produit->nom ?? '—' }} — {{ $distributionPreselectionnee->date_distribution->format('d/m/Y') }} — {{ $distributionPreselectionnee->pains_attribues }} pains"
                              style="display:flex;align-items:center;justify-content:space-between;background:#FFF7ED;border:1px solid #F97316;border-radius:12px;padding:14px 16px;box-sizing:border-box">
                             <div style="flex:1;min-width:0">
@@ -129,7 +135,11 @@
                                 @php
                                     $aDejaVersement = $dist->versement !== null;
                                     $reliquatActuel = (float) $dist->reliquat;
-                                    $invendusExist  = $dist->nombre_invendus ?? '';
+                                    // Repli sur l'ancien compteur entier pour une
+                                    // distribution réglée avant ce changement.
+                                    $entiersExist = $dist->entiers_invendus ?? $dist->nombre_invendus ?? 0;
+                                    $moitiesExist = $dist->moities_invendus ?? 0;
+                                    $tiersExist   = $dist->tiers_invendus ?? 0;
                                 @endphp
                                 <div onclick="selectDist({{ $dist->id }})"
                                      id="distOption_{{ $dist->id }}"
@@ -138,7 +148,9 @@
                                      data-prix="{{ $dist->prix_pain ?? $prixPain }}"
                                      data-has-versement="{{ $aDejaVersement ? 1 : 0 }}"
                                      data-reliquat-actuel="{{ $reliquatActuel }}"
-                                     data-invendus-existants="{{ $invendusExist }}"
+                                     data-entiers-existants="{{ $entiersExist }}"
+                                     data-moities-existants="{{ $moitiesExist }}"
+                                     data-tiers-existants="{{ $tiersExist }}"
                                      data-label="{{ $dist->produit->nom ?? '—' }} — {{ $dist->date_distribution->format('d/m/Y') }} — {{ $dist->pains_attribues }} pains"
                                      style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;{{ !$loop->last ? 'border-bottom:1px solid #E5E7EB;' : '' }}"
                                      onmouseover="this.style.background='#FFF7ED'" onmouseout="this.style.background='#FFFFFF'">
@@ -191,17 +203,38 @@
                 </div>
 
                 {{-- Invendus retournés — uniquement pertinent pour le premier versement d'une
-                     distribution ; sans objet pour régler un reliquat déjà calculé. --}}
+                     distribution ; sans objet pour régler un reliquat déjà calculé.
+                     Compter les morceaux (entiers/moitiés/tiers), jamais de virgule à taper. --}}
                 @php
                     $dpAVersementInit = ($distributionPreselectionnee ?? null) && $distributionPreselectionnee->versement !== null;
-                    $invendusInitial  = $dpAVersementInit ? ($distributionPreselectionnee->nombre_invendus ?? 0) : old('nombre_invendus', 0);
+                    $entiersInvendusInit = $dpAVersementInit
+                        ? ($distributionPreselectionnee->entiers_invendus ?? $distributionPreselectionnee->nombre_invendus ?? 0)
+                        : old('entiers_invendus', 0);
+                    $moitiesInvendusInit = $dpAVersementInit ? ($distributionPreselectionnee->moities_invendus ?? 0) : old('moities_invendus', 0);
+                    $tiersInvendusInit   = $dpAVersementInit ? ($distributionPreselectionnee->tiers_invendus ?? 0) : old('tiers_invendus', 0);
                 @endphp
                 <div id="invendusWrapper" style="margin-bottom:18px;{{ $dpAVersementInit ? 'display:none' : '' }}">
                     <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Invendus retournés *</label>
-                    <input type="number" name="nombre_invendus" min="0"
-                           value="{{ $invendusInitial }}" id="invendusInput"
-                           placeholder="0" oninput="calcVers()"
-                           style="width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;font-size:15px;color:#111827;box-sizing:border-box;outline:none">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+                        <div>
+                            <label style="font-size:12px;color:#6B7280;display:block;margin-bottom:4px">Entiers</label>
+                            <input type="number" name="entiers_invendus" min="0" id="invEntiers"
+                                   value="{{ $entiersInvendusInit }}" oninput="calcVers()"
+                                   style="width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px;font-size:15px;color:#111827;box-sizing:border-box;outline:none">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:#6B7280;display:block;margin-bottom:4px">Moitiés</label>
+                            <input type="number" name="moities_invendus" min="0" id="invMoities"
+                                   value="{{ $moitiesInvendusInit }}" oninput="calcVers()"
+                                   style="width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px;font-size:15px;color:#111827;box-sizing:border-box;outline:none">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:#6B7280;display:block;margin-bottom:4px">Tiers</label>
+                            <input type="number" name="tiers_invendus" min="0" id="invTiers"
+                                   value="{{ $tiersInvendusInit }}" oninput="calcVers()"
+                                   style="width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px;font-size:15px;color:#111827;box-sizing:border-box;outline:none">
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Montant versé --}}
@@ -271,13 +304,16 @@
             // Invendus retournés : sans objet pour régler un reliquat déjà
             // calculé (le premier versement l'a déjà fixé) — champ masqué,
             // pas seulement grisé, avec sa valeur déjà connue conservée pour l'envoi.
-            const hasVersement  = option.getAttribute('data-has-versement') === '1';
-            const invendusInput = document.getElementById('invendusInput');
+            const hasVersement    = option.getAttribute('data-has-versement') === '1';
+            const invEntiersInput = document.getElementById('invEntiers');
+            const invMoitiesInput = document.getElementById('invMoities');
+            const invTiersInput   = document.getElementById('invTiers');
             const invendusWrapper = document.getElementById('invendusWrapper');
-            if (invendusInput) {
+            if (invEntiersInput) {
                 if (hasVersement) {
-                    const existants = option.getAttribute('data-invendus-existants');
-                    invendusInput.value = existants !== '' ? existants : '0';
+                    invEntiersInput.value = option.getAttribute('data-entiers-existants') || '0';
+                    invMoitiesInput.value = option.getAttribute('data-moities-existants') || '0';
+                    invTiersInput.value   = option.getAttribute('data-tiers-existants') || '0';
                     if (invendusWrapper) invendusWrapper.style.display = 'none';
                 } else {
                     if (invendusWrapper) invendusWrapper.style.display = 'block';
@@ -298,7 +334,14 @@
             const prix           = parseInt(option.getAttribute('data-prix')  || 0);
             const hasVersement   = option.getAttribute('data-has-versement') === '1';
             const reliquatActuel = parseFloat(option.getAttribute('data-reliquat-actuel') || 0);
-            const invendus       = parseInt(document.getElementById('invendusInput')?.value || 0);
+
+            // Compter les morceaux (entiers/moitiés/tiers) — jamais de virgule
+            // tapée par l'utilisateur, le calcul précis se fait ici.
+            const invEntiers = parseInt(document.getElementById('invEntiers')?.value || 0);
+            const invMoities = parseInt(document.getElementById('invMoities')?.value || 0);
+            const invTiers   = parseInt(document.getElementById('invTiers')?.value || 0);
+            const invendus   = invEntiers + invMoities * 0.5 + invTiers / 3;
+
             const verse          = parseFloat(document.getElementById('montantInput')?.value || 0);
 
             const hint         = document.getElementById('reliquatHint');
@@ -306,6 +349,7 @@
             const surplusLine  = document.getElementById('surplusLine');
             const rAttenduEl   = document.getElementById('rAttendu');
             const vendus       = Math.max(0, pains - invendus);
+            const fmt          = (n) => n.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
 
             let reliquat, surplus;
 
@@ -314,8 +358,8 @@
                 surplus  = Math.max(0, verse - reliquatActuel);
 
                 document.getElementById('rPains').textContent    = pains + ' pains';
-                document.getElementById('rInvendus').textContent = invendus + ' pains';
-                document.getElementById('rVendus').textContent   = vendus + ' pains';
+                document.getElementById('rInvendus').textContent = fmt(invendus) + ' pains';
+                document.getElementById('rVendus').textContent   = fmt(vendus) + ' pains';
                 if (rAttenduEl) {
                     rAttenduEl.parentElement.children[0].textContent = 'Reliquat restant dû';
                     rAttenduEl.textContent = reliquatActuel.toLocaleString('fr-FR') + ' FCFA';
@@ -327,8 +371,8 @@
                 surplus  = Math.max(0, verse - attendu);
 
                 document.getElementById('rPains').textContent    = pains + ' pains';
-                document.getElementById('rInvendus').textContent = invendus + ' pains';
-                document.getElementById('rVendus').textContent   = vendus + ' pains';
+                document.getElementById('rInvendus').textContent = fmt(invendus) + ' pains';
+                document.getElementById('rVendus').textContent   = fmt(vendus) + ' pains';
                 if (rAttenduEl) {
                     rAttenduEl.parentElement.children[0].textContent = 'Montant attendu';
                     rAttenduEl.textContent = attendu.toLocaleString('fr-FR') + ' FCFA';

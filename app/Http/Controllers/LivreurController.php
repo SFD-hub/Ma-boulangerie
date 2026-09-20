@@ -6,6 +6,7 @@ use App\Models\Distribution;
 use App\Models\Livreur;
 use App\Models\Produit;
 use App\Models\Versement;
+use App\Support\Nombre;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -212,8 +213,11 @@ class LivreurController extends Controller
             'prix_pain.min'                     => 'Le prix du pain doit être au moins 1 FCFA.',
         ]);
 
-        $produit    = Produit::findOrFail($validated['produit_id']);
-        $disponible = $produit->painsDisponibles();
+        $produit = Produit::findOrFail($validated['produit_id']);
+        // On attribue toujours des pains entiers — si le Dépôt a déjà vendu
+        // une fraction du stock, on arrondit à l'entier inférieur (on ne peut
+        // pas donner 0,33 pain à un livreur).
+        $disponible = (int) floor($produit->painsDisponibles());
 
         if ($validated['nombre_pains'] > $disponible) {
             $reste = max(0, $disponible);
@@ -247,15 +251,24 @@ class LivreurController extends Controller
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $validated = $request->validate([
-            'distribution_id' => 'required|exists:distributions,id',
-            'nombre_invendus' => 'required|integer|min:0',
-            'montant_verse'   => 'required|numeric|min:0.01',
+            'distribution_id'  => 'required|exists:distributions,id',
+            'entiers_invendus' => 'nullable|integer|min:0',
+            'moities_invendus' => 'nullable|integer|min:0',
+            'tiers_invendus'   => 'nullable|integer|min:0',
+            'montant_verse'    => 'required|numeric|min:0.01',
         ], [
             'distribution_id.required' => 'Sélectionnez une distribution.',
-            'nombre_invendus.required' => 'Le nombre d\'invendus est obligatoire (0 si aucun).',
             'montant_verse.required'   => 'Le montant versé est obligatoire.',
             'montant_verse.min'        => 'Le montant versé doit être supérieur à 0.',
         ]);
+
+        // L'utilisateur compte des morceaux (des nombres entiers), jamais une
+        // fraction — l'app fait le calcul précis derrière (entier=1, moitié=0,5,
+        // tiers=1/3), comme pour la vente Boutique.
+        $entiersInvendus    = (int) ($validated['entiers_invendus'] ?? 0);
+        $moitiesInvendus    = (int) ($validated['moities_invendus'] ?? 0);
+        $tiersInvendus      = (int) ($validated['tiers_invendus'] ?? 0);
+        $invendusEquivalent = round($entiersInvendus + $moitiesInvendus * 0.5 + $tiersInvendus / 3, 2);
 
         $distributionRef = Distribution::findOrFail($validated['distribution_id']);
         abort_if($distributionRef->livreur_id !== $livreur->id, 403);
@@ -265,7 +278,7 @@ class LivreurController extends Controller
             ?? auth()->user()->boulangerie?->prix_pain
             ?? 0;
 
-        $resultat = DB::transaction(function () use ($validated, $distributionRef, $livreur, $prixPain) {
+        $resultat = DB::transaction(function () use ($validated, $distributionRef, $livreur, $prixPain, $entiersInvendus, $moitiesInvendus, $tiersInvendus, $invendusEquivalent) {
             // Verrouille la distribution ciblée ET toutes les distributions du
             // livreur ayant un reliquat, avant toute lecture utilisée pour le
             // calcul — deux versements simultanés pour le même livreur ne
@@ -280,8 +293,10 @@ class LivreurController extends Controller
             }
 
             $painsAttribues = $distribution->pains_attribues;
-            if ($validated['nombre_invendus'] > $painsAttribues) {
-                return ['ok' => false, 'message' => 'Les invendus (' . $validated['nombre_invendus'] . ') ne peuvent pas dépasser les pains attribués (' . $painsAttribues . ').'];
+            // Comparaison en centièmes entiers : jamais comparer des flottants
+            // directement (erreurs d'arrondi binaire possibles).
+            if (round($invendusEquivalent * 100) > round($painsAttribues * 100)) {
+                return ['ok' => false, 'message' => 'Les invendus (' . Nombre::qte($invendusEquivalent) . ') ne peuvent pas dépasser les pains attribués (' . $painsAttribues . ').'];
             }
 
             $estPremierVersement = !$distribution->versement()->exists();
@@ -289,16 +304,19 @@ class LivreurController extends Controller
 
             if ($estPremierVersement) {
                 // ── 1a. Premier versement : calculs complets ─────────────────
-                $painsVendus    = $distribution->pains_attribues - (int) $validated['nombre_invendus'];
+                $painsVendus    = $painsAttribues - $invendusEquivalent;
                 $montantAttendu = $painsVendus * $prixPain;
                 $reliquatJour   = max(0.0, $montantAttendu - $montantVerse);
                 $surplus        = max(0.0, $montantVerse - $montantAttendu);
 
                 $distribution->update([
-                    'nombre_invendus' => (int) $validated['nombre_invendus'],
-                    'montant_attendu' => $montantAttendu,
-                    'reliquat'        => $reliquatJour,
-                    'statut'          => $reliquatJour <= 0 ? 'reglee' : 'en_attente',
+                    'entiers_invendus'    => $entiersInvendus,
+                    'moities_invendus'    => $moitiesInvendus,
+                    'tiers_invendus'      => $tiersInvendus,
+                    'invendus_equivalent' => $invendusEquivalent,
+                    'montant_attendu'     => $montantAttendu,
+                    'reliquat'            => $reliquatJour,
+                    'statut'              => $reliquatJour <= 0 ? 'reglee' : 'en_attente',
                 ]);
             } else {
                 // ── 1b. Versement supplémentaire : on réduit le reliquat ─────

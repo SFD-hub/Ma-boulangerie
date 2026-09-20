@@ -110,7 +110,7 @@
         Meilleur livreur — {{ $moisNomCourant }}
     </div>
 
-    @if(!$meilleursLivreur || $meilleursLivreur['pains_vendus'] === 0)
+    @if(!$meilleursLivreur || $meilleursLivreur['pains_vendus'] <= 0)
         <div style="background:#FFFFFF;border-radius:18px;padding:24px 20px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:24px;color:#9CA3AF;font-size:14px">
             Aucune vente enregistrée ce mois.
         </div>

@@ -56,17 +56,33 @@
                 <input type="hidden" name="produit_id" value="{{ $produits->first()->id }}">
             @endif
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-                <div class="form-group">
-                    <label class="form-label">Quantité (pains) *</label>
-                    <input class="form-input" type="number" name="quantite" min="1"
-                           value="{{ old('quantite') }}" placeholder="Ex : 2" required>
+            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Combien de chaque type ont été vendus ? *</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Entiers</label>
+                    <input class="form-input" type="number" name="nombre_entiers" min="0" id="pieceEntiers"
+                           value="{{ old('nombre_entiers', 0) }}" oninput="calcPieces()">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Montant (FCFA) *</label>
-                    <input class="form-input" type="number" name="montant" min="1"
-                           value="{{ old('montant') }}" placeholder="Ex : 500" required>
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Moitiés</label>
+                    <input class="form-input" type="number" name="nombre_moities" min="0" id="pieceMoities"
+                           value="{{ old('nombre_moities', 0) }}" oninput="calcPieces()">
                 </div>
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Tiers</label>
+                    <input class="form-input" type="number" name="nombre_tiers" min="0" id="pieceTiers"
+                           value="{{ old('nombre_tiers', 0) }}" oninput="calcPieces()">
+                </div>
+            </div>
+
+            <div id="piecesApercu" style="display:none;font-size:13px;color:#059669;font-weight:600;margin:-8px 0 16px">
+                ≈ <span id="piecesEquivalent">0</span> pain vendu
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Montant reçu (FCFA) *</label>
+                <input class="form-input" type="number" name="montant" min="1"
+                       value="{{ old('montant') }}" placeholder="Ex : 500" required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full" {{ $produits->isEmpty() ? 'disabled' : '' }}>
@@ -75,6 +91,24 @@
         </form>
     </div>
 
+    <script>
+        function calcPieces() {
+            const entiers = parseInt(document.getElementById('pieceEntiers')?.value || 0);
+            const moities = parseInt(document.getElementById('pieceMoities')?.value || 0);
+            const tiers   = parseInt(document.getElementById('pieceTiers')?.value || 0);
+            const total   = entiers + moities * 0.5 + tiers / 3;
+            const apercu  = document.getElementById('piecesApercu');
+
+            if (entiers + moities + tiers > 0) {
+                document.getElementById('piecesEquivalent').textContent = total.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+                apercu.style.display = 'block';
+            } else {
+                apercu.style.display = 'none';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', calcPieces);
+    </script>
+
     {{-- ── Totaux du jour ── --}}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
         <div style="background:#D1FAE5;border-radius:18px;padding:18px 14px">
@@ -82,7 +116,7 @@
                 Pains vendus
             </div>
             <div style="font-size:34px;font-weight:800;color:#111827;line-height:1">
-                {{ number_format($totalQuantite, 0, ',', ' ') }}
+                {{ \App\Support\Nombre::qte($totalQuantite) }}
             </div>
         </div>
 
@@ -112,7 +146,7 @@
                     <div class="avatar">🏪</div>
                     <div class="list-item-body">
                         <div class="list-item-name">{{ $vente->produit->nom ?? 'Pain' }}</div>
-                        <div class="list-item-sub">{{ $vente->quantite }} pain{{ $vente->quantite > 1 ? 's' : '' }}</div>
+                        <div class="list-item-sub">{{ $vente->descriptionPieces() }} (≈ {{ \App\Support\Nombre::qte($vente->quantite_equivalente) }} pain)</div>
                     </div>
                     <div class="list-item-right" style="display:flex;align-items:center;gap:8px">
                         <span style="font-size:14px;font-weight:700;color:#111827">

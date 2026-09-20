@@ -51,11 +51,11 @@ class CaisseDuJour
 
         $depotJour = DepotVente::where('boulangerie_id', $boulangerie_id)
             ->whereDate('date_vente', $date)
-            ->selectRaw('COALESCE(SUM(quantite), 0) as quantite, COALESCE(SUM(montant), 0) as montant')
+            ->selectRaw('COALESCE(SUM(quantite_equivalente), 0) as quantite, COALESCE(SUM(montant), 0) as montant')
             ->first();
 
         $depotJour = [
-            'quantite' => (int) $depotJour->quantite,
+            'quantite' => (float) $depotJour->quantite,
             'montant'  => (float) $depotJour->montant,
             'route'    => route('depot.index'),
         ];

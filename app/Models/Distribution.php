@@ -20,17 +20,25 @@ class Distribution extends Model
         'nombre_pains',
         'prix_pain',
         'nombre_invendus',
+        'entiers_invendus',
+        'moities_invendus',
+        'tiers_invendus',
+        'invendus_equivalent',
         'reliquat',
         'statut',
     ];
 
     protected $casts = [
-        'date_distribution' => 'date',
-        'montant_attendu'   => 'decimal:2',
-        'reliquat'          => 'decimal:2',
-        'nombre_pains'      => 'integer',
-        'prix_pain'         => 'integer',
-        'nombre_invendus'   => 'integer',
+        'date_distribution'    => 'date',
+        'montant_attendu'      => 'decimal:2',
+        'reliquat'             => 'decimal:2',
+        'nombre_pains'         => 'integer',
+        'prix_pain'            => 'integer',
+        'nombre_invendus'      => 'integer',
+        'entiers_invendus'     => 'integer',
+        'moities_invendus'     => 'integer',
+        'tiers_invendus'       => 'integer',
+        'invendus_equivalent'  => 'decimal:2',
     ];
 
     public function livreur(): BelongsTo
@@ -63,13 +71,18 @@ class Distribution extends Model
         return (int) $this->nombre_pains;
     }
 
-    public function getInvendusAttribute(): int
+    // Quantité invendue précise (entiers/moitiés/tiers) si le règlement a été
+    // fait avec la répartition par pièce ; repli sur l'ancien compteur entier
+    // pour les distributions réglées avant l'introduction de cette précision.
+    public function getInvendusAttribute(): float
     {
-        return (int) $this->nombre_invendus;
+        return $this->invendus_equivalent !== null
+            ? (float) $this->invendus_equivalent
+            : (float) $this->nombre_invendus;
     }
 
-    public function getPainsVendusAttribute(): int
+    public function getPainsVendusAttribute(): float
     {
-        return max(0, $this->pains_attribues - $this->invendus);
+        return max(0.0, $this->pains_attribues - $this->invendus);
     }
 }

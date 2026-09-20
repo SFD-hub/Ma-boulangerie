@@ -11,6 +11,7 @@ use App\Models\PaiementFacture;
 use App\Models\Production;
 use App\Models\Versement;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class StatistiqueController extends Controller
@@ -30,9 +31,12 @@ class StatistiqueController extends Controller
             'livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
         )->sum('nombre_pains');
 
-        $totalInvendus = (int) Distribution::whereHas(
+        // COALESCE : reprend la même logique de repli que l'accessor
+        // Distribution::invendus() (précision par pièce si réglée avec le
+        // nouveau système, sinon l'ancien compteur entier).
+        $totalInvendus = (float) Distribution::whereHas(
             'livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
-        )->sum('nombre_invendus');
+        )->sum(DB::raw('COALESCE(invendus_equivalent, nombre_invendus)'));
 
         $totalPainsVendus = max(0, $totalPainsDistribues - $totalInvendus);
 
@@ -67,9 +71,7 @@ class StatistiqueController extends Controller
             ->get()
             ->map(fn ($livreur) => [
                 'livreur'         => $livreur,
-                'pains_vendus'    => (int) $livreur->distributions->sum(
-                    fn ($d) => max(0, (int) ($d->nombre_pains ?? 0) - (int) ($d->nombre_invendus ?? 0))
-                ),
+                'pains_vendus'    => (float) $livreur->distributions->sum(fn ($d) => $d->pains_vendus),
                 'montant_encaisse'=> (float) $livreur->versements->sum('montant_verse'),
             ])
             ->sortByDesc('pains_vendus');

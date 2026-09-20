@@ -55,11 +55,11 @@
         @if ($distribution->versement)
             <div style="padding: 16px; background: #fff; border: 1px solid #28a745; border-radius: 8px;">
                 <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Pains vendus</p>
-                <p style="margin: 0; font-size: 20px; font-weight: 700; color: #155724;">{{ $distribution->pains_vendus }}</p>
+                <p style="margin: 0; font-size: 20px; font-weight: 700; color: #155724;">{{ \App\Support\Nombre::qte($distribution->pains_vendus) }}</p>
             </div>
             <div style="padding: 16px; background: #fff; border: 1px solid #f59e0b; border-radius: 8px;">
                 <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Invendus (retournés)</p>
-                <p style="margin: 0; font-size: 20px; font-weight: 700; color: #92400e;">{{ $distribution->invendus }}</p>
+                <p style="margin: 0; font-size: 20px; font-weight: 700; color: #92400e;">{{ \App\Support\Nombre::qte($distribution->invendus) }}</p>
             </div>
         @endif
         <div style="padding: 16px; background: #fff; border: 1px solid {{ $reliquat > 0 ? '#c33' : '#28a745' }}; border-radius: 8px;">

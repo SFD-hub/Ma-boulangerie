@@ -86,8 +86,8 @@
                                 · <span style="color:#6B7280">{{ number_format($dist->prix_pain, 0, ',', ' ') }}&nbsp;FCFA/pain</span>
                             @endif
                             @if($aVersement)
-                                · <span style="color:#10B981">{{ $dist->pains_vendus }}&nbsp;vendus</span>
-                                · <span style="color:#F97316">{{ $dist->invendus }}&nbsp;invendus</span>
+                                · <span style="color:#10B981">{{ \App\Support\Nombre::qte($dist->pains_vendus) }}&nbsp;vendus</span>
+                                · <span style="color:#F97316">{{ \App\Support\Nombre::qte($dist->invendus) }}&nbsp;invendus</span>
                             @elseif(!$estReglee)
                                 · <span style="font-style:italic;color:#9CA3AF">ventes en attente</span>
                             @endif

@@ -66,7 +66,7 @@
                     <div class="list-item-body">
                         <div class="list-item-name">Boutique — total du jour</div>
                         <div class="list-item-sub">
-                            {{ $depotJour['quantite'] }} pain{{ $depotJour['quantite'] > 1 ? 's' : '' }} vendu{{ $depotJour['quantite'] > 1 ? 's' : '' }}
+                            ≈ {{ \App\Support\Nombre::qte($depotJour['quantite']) }} pain vendu
                         </div>
                     </div>
                     <div class="list-item-right">
