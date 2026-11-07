@@ -34,9 +34,11 @@ class StatistiqueController extends Controller
         // COALESCE : reprend la même logique de repli que l'accessor
         // Distribution::invendus() (précision par pièce si réglée avec le
         // nouveau système, sinon l'ancien compteur entier).
-        $totalInvendus = (float) Distribution::whereHas(
+        // En sixièmes de pain (entiers) : même repli que l'accessor
+        // Distribution::parts_invendues (ancien compteur entier × 6).
+        $totalInvendus = (int) Distribution::whereHas(
             'livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
-        )->sum(DB::raw('COALESCE(invendus_equivalent, nombre_invendus)'));
+        )->sum(DB::raw('COALESCE(invendus_parts, nombre_invendus * 6, 0)')) / 6;
 
         $totalPainsVendus = max(0, $totalPainsDistribues - $totalInvendus);
 

@@ -24,6 +24,7 @@ class Distribution extends Model
         'moities_invendus',
         'tiers_invendus',
         'invendus_equivalent',
+        'invendus_parts',
         'reliquat',
         'statut',
     ];
@@ -39,6 +40,7 @@ class Distribution extends Model
         'moities_invendus'     => 'integer',
         'tiers_invendus'       => 'integer',
         'invendus_equivalent'  => 'decimal:2',
+        'invendus_parts'       => 'integer',
     ];
 
     public function livreur(): BelongsTo
@@ -71,18 +73,30 @@ class Distribution extends Model
         return (int) $this->nombre_pains;
     }
 
-    // Quantité invendue précise (entiers/moitiés/tiers) si le règlement a été
-    // fait avec la répartition par pièce ; repli sur l'ancien compteur entier
+    // Invendus en sixièmes de pain (entier = 6, moitié = 3, tiers = 2) : des
+    // nombres entiers, donc aucun arrondi. Repli sur l'ancien compteur entier
     // pour les distributions réglées avant l'introduction de cette précision.
+    public function getPartsInvenduesAttribute(): int
+    {
+        return $this->invendus_parts !== null
+            ? (int) $this->invendus_parts
+            : (int) $this->nombre_invendus * 6;
+    }
+
+    public function getPartsVenduesAttribute(): int
+    {
+        return max(0, $this->pains_attribues * 6 - $this->parts_invendues);
+    }
+
+    // Versions en nombre de pains (parts ÷ 6) pour l'affichage : toujours un
+    // multiple exact de 1/6, à passer à Nombre::pains().
     public function getInvendusAttribute(): float
     {
-        return $this->invendus_equivalent !== null
-            ? (float) $this->invendus_equivalent
-            : (float) $this->nombre_invendus;
+        return $this->parts_invendues / 6;
     }
 
     public function getPainsVendusAttribute(): float
     {
-        return max(0.0, $this->pains_attribues - $this->invendus);
+        return $this->parts_vendues / 6;
     }
 }

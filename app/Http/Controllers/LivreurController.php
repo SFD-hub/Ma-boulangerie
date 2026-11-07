@@ -217,7 +217,7 @@ class LivreurController extends Controller
         // On attribue toujours des pains entiers — si le Dépôt a déjà vendu
         // une fraction du stock, on arrondit à l'entier inférieur (on ne peut
         // pas donner 0,33 pain à un livreur).
-        $disponible = (int) floor($produit->painsDisponibles());
+        $disponible = $produit->painsEntiersDisponibles();
 
         if ($validated['nombre_pains'] > $disponible) {
             $reste = max(0, $disponible);
@@ -268,7 +268,9 @@ class LivreurController extends Controller
         $entiersInvendus    = (int) ($validated['entiers_invendus'] ?? 0);
         $moitiesInvendus    = (int) ($validated['moities_invendus'] ?? 0);
         $tiersInvendus      = (int) ($validated['tiers_invendus'] ?? 0);
-        $invendusEquivalent = round($entiersInvendus + $moitiesInvendus * 0.5 + $tiersInvendus / 3, 2);
+        // Comptés en sixièmes de pain (entier = 6, moitié = 3, tiers = 2) :
+        // des nombres entiers, donc aucun arrondi sur les montants ni le stock.
+        $invendusParts = $entiersInvendus * 6 + $moitiesInvendus * 3 + $tiersInvendus * 2;
 
         $distributionRef = Distribution::findOrFail($validated['distribution_id']);
         abort_if($distributionRef->livreur_id !== $livreur->id, 403);
@@ -278,7 +280,7 @@ class LivreurController extends Controller
             ?? auth()->user()->boulangerie?->prix_pain
             ?? 0;
 
-        $resultat = DB::transaction(function () use ($validated, $distributionRef, $livreur, $prixPain, $entiersInvendus, $moitiesInvendus, $tiersInvendus, $invendusEquivalent) {
+        $resultat = DB::transaction(function () use ($validated, $distributionRef, $livreur, $prixPain, $entiersInvendus, $moitiesInvendus, $tiersInvendus, $invendusParts) {
             // Verrouille la distribution ciblée ET toutes les distributions du
             // livreur ayant un reliquat, avant toute lecture utilisée pour le
             // calcul — deux versements simultanés pour le même livreur ne
@@ -293,10 +295,8 @@ class LivreurController extends Controller
             }
 
             $painsAttribues = $distribution->pains_attribues;
-            // Comparaison en centièmes entiers : jamais comparer des flottants
-            // directement (erreurs d'arrondi binaire possibles).
-            if (round($invendusEquivalent * 100) > round($painsAttribues * 100)) {
-                return ['ok' => false, 'message' => 'Les invendus (' . Nombre::qte($invendusEquivalent) . ') ne peuvent pas dépasser les pains attribués (' . $painsAttribues . ').'];
+            if ($invendusParts > $painsAttribues * 6) {
+                return ['ok' => false, 'message' => 'Les invendus (' . Nombre::pains($invendusParts / 6) . ') ne peuvent pas dépasser les pains attribués (' . $painsAttribues . ').'];
             }
 
             $estPremierVersement = !$distribution->versement()->exists();
@@ -304,8 +304,9 @@ class LivreurController extends Controller
 
             if ($estPremierVersement) {
                 // ── 1a. Premier versement : calculs complets ─────────────────
-                $painsVendus    = $painsAttribues - $invendusEquivalent;
-                $montantAttendu = $painsVendus * $prixPain;
+                // Montant en FCFA entiers, calculé sur des entiers (sixièmes)
+                // puis arrondi une seule fois au franc le plus proche.
+                $montantAttendu = round(($painsAttribues * 6 - $invendusParts) * $prixPain / 6);
                 $reliquatJour   = max(0.0, $montantAttendu - $montantVerse);
                 $surplus        = max(0.0, $montantVerse - $montantAttendu);
 
@@ -313,7 +314,8 @@ class LivreurController extends Controller
                     'entiers_invendus'    => $entiersInvendus,
                     'moities_invendus'    => $moitiesInvendus,
                     'tiers_invendus'      => $tiersInvendus,
-                    'invendus_equivalent' => $invendusEquivalent,
+                    'invendus_equivalent' => round($invendusParts / 6, 2),
+                    'invendus_parts'      => $invendusParts,
                     'montant_attendu'     => $montantAttendu,
                     'reliquat'            => $reliquatJour,
                     'statut'              => $reliquatJour <= 0 ? 'reglee' : 'en_attente',

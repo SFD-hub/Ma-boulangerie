@@ -66,7 +66,7 @@ class Produit extends Model
      *         existante : sa propre quantité ne doit pas se compter contre
      *         elle-même).
      */
-    public function painsDisponibles(?int $exclureDistributionId = null): float
+    public function partsDisponibles(?int $exclureDistributionId = null): int
     {
         $totalProduit = (int) $this->productions()->sum('nombre_pains_produits');
 
@@ -76,11 +76,25 @@ class Produit extends Model
         }
         $totalDistribue = (int) $totalDistribueQuery->sum('nombre_pains');
 
-        // Le Dépôt peut vendre des fractions de pain (entier/moitié/tiers) —
-        // c'est la seule source de décimales dans ce calcul, l'attribution et
-        // la production restent toujours en pains entiers.
-        $totalDepot = (float) $this->depotVentes()->sum('quantite_equivalente');
+        // Le Dépôt peut vendre des fractions de pain (entier/moitié/tiers),
+        // comptées en sixièmes (colonne parts) ; l'attribution et la
+        // production restent toujours en pains entiers (× 6 ci-dessous).
+        $totalDepot = (int) $this->depotVentes()->sum('parts');
 
-        return round($totalProduit - $totalDistribue - $totalDepot, 2);
+        return ($totalProduit - $totalDistribue) * 6 - $totalDepot;
+    }
+
+    // Nombre de pains (multiple exact de 1/6) encore disponibles, pour
+    // l'affichage via Nombre::pains().
+    public function painsDisponibles(?int $exclureDistributionId = null): float
+    {
+        return $this->partsDisponibles($exclureDistributionId) / 6;
+    }
+
+    // Pains ENTIERS encore attribuables (on ne donne jamais une fraction de
+    // pain à un livreur) : division entière exacte, sans passer par un float.
+    public function painsEntiersDisponibles(?int $exclureDistributionId = null): int
+    {
+        return (int) floor($this->partsDisponibles($exclureDistributionId) / 6);
     }
 }

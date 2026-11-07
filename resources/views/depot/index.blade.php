@@ -56,33 +56,35 @@
                 <input type="hidden" name="produit_id" value="{{ $produits->first()->id }}">
             @endif
 
-            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">Combien de chaque type ont été vendus ? *</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-                <div class="form-group" style="margin-bottom:0">
-                    <label class="form-label">Entiers</label>
-                    <input class="form-input" type="number" name="nombre_entiers" min="0" id="pieceEntiers"
-                           value="{{ old('nombre_entiers', 0) }}" oninput="calcPieces()">
+            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:4px">Pains vendus *</div>
+            @php
+                $lignes = [
+                    ['id' => 'Entiers', 'name' => 'nombre_entiers', 'label' => 'Entier', 'prix' => $prix['entier']],
+                    ['id' => 'Moities', 'name' => 'nombre_moities', 'label' => 'Moitié', 'prix' => $prix['moitie']],
+                    ['id' => 'Tiers',   'name' => 'nombre_tiers',   'label' => 'Tiers',  'prix' => $prix['tiers']],
+                ];
+            @endphp
+            @foreach($lignes as $l)
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F3F4F6">
+                    <div>
+                        <div style="font-size:15px;font-weight:600;color:#111827">{{ $l['label'] }}</div>
+                        <div style="font-size:12px;color:#6B7280">{{ number_format($l['prix'], 0, ',', ' ') }} FCFA</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <button type="button" onclick="changerPiece('piece{{ $l['id'] }}', -1)"
+                                style="width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:#fff;font-size:22px;font-weight:700;color:#111827;cursor:pointer">−</button>
+                        <input type="number" name="{{ $l['name'] }}" id="piece{{ $l['id'] }}" min="0" inputmode="numeric"
+                               data-prix="{{ $l['prix'] }}" value="{{ old($l['name'], 0) }}" oninput="calcPieces()"
+                               style="width:56px;text-align:center;font-size:18px;font-weight:700;border:none;background:transparent;color:#111827">
+                        <button type="button" onclick="changerPiece('piece{{ $l['id'] }}', 1)"
+                                style="width:40px;height:40px;border-radius:12px;border:none;background:#F97316;font-size:22px;font-weight:700;color:#fff;cursor:pointer">+</button>
+                    </div>
                 </div>
-                <div class="form-group" style="margin-bottom:0">
-                    <label class="form-label">Moitiés</label>
-                    <input class="form-input" type="number" name="nombre_moities" min="0" id="pieceMoities"
-                           value="{{ old('nombre_moities', 0) }}" oninput="calcPieces()">
-                </div>
-                <div class="form-group" style="margin-bottom:0">
-                    <label class="form-label">Tiers</label>
-                    <input class="form-input" type="number" name="nombre_tiers" min="0" id="pieceTiers"
-                           value="{{ old('nombre_tiers', 0) }}" oninput="calcPieces()">
-                </div>
-            </div>
+            @endforeach
 
-            <div id="piecesApercu" style="display:none;font-size:13px;color:#059669;font-weight:600;margin:-8px 0 16px">
-                ≈ <span id="piecesEquivalent">0</span> pain vendu
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Montant reçu (FCFA) *</label>
-                <input class="form-input" type="number" name="montant" min="1"
-                       value="{{ old('montant') }}" placeholder="Ex : 500" required>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin:16px 0">
+                <span style="font-size:14px;font-weight:600;color:#374151">Total</span>
+                <span style="font-size:22px;font-weight:800;color:#111827"><span id="totalMontant">0</span> FCFA</span>
             </div>
 
             <button type="submit" class="btn btn-primary btn-full" {{ $produits->isEmpty() ? 'disabled' : '' }}>
@@ -92,19 +94,20 @@
     </div>
 
     <script>
-        function calcPieces() {
-            const entiers = parseInt(document.getElementById('pieceEntiers')?.value || 0);
-            const moities = parseInt(document.getElementById('pieceMoities')?.value || 0);
-            const tiers   = parseInt(document.getElementById('pieceTiers')?.value || 0);
-            const total   = entiers + moities * 0.5 + tiers / 3;
-            const apercu  = document.getElementById('piecesApercu');
+        const ids = ['pieceEntiers', 'pieceMoities', 'pieceTiers'];
 
-            if (entiers + moities + tiers > 0) {
-                document.getElementById('piecesEquivalent').textContent = total.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
-                apercu.style.display = 'block';
-            } else {
-                apercu.style.display = 'none';
-            }
+        function valeur(id) {
+            return Math.max(0, parseInt(document.getElementById(id)?.value || 0) || 0);
+        }
+
+        function changerPiece(id, delta) {
+            document.getElementById(id).value = Math.max(0, valeur(id) + delta);
+            calcPieces();
+        }
+
+        function calcPieces() {
+            const total = ids.reduce((somme, id) => somme + valeur(id) * parseInt(document.getElementById(id).dataset.prix), 0);
+            document.getElementById('totalMontant').textContent = total.toLocaleString('fr-FR');
         }
         document.addEventListener('DOMContentLoaded', calcPieces);
     </script>
@@ -116,8 +119,9 @@
                 Pains vendus
             </div>
             <div style="font-size:34px;font-weight:800;color:#111827;line-height:1">
-                {{ \App\Support\Nombre::qte($totalQuantite) }}
+                {{ \App\Support\Nombre::painsEntiers($totalQuantite) }}
             </div>
+            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">{{ \App\Support\Nombre::painsLegende($totalQuantite) }}</div>
         </div>
 
         <div style="background:#DBEAFE;border-radius:18px;padding:18px 14px">
@@ -146,7 +150,7 @@
                     <div class="avatar">🏪</div>
                     <div class="list-item-body">
                         <div class="list-item-name">{{ $vente->produit->nom ?? 'Pain' }}</div>
-                        <div class="list-item-sub">{{ $vente->descriptionPieces() }} (≈ {{ \App\Support\Nombre::qte($vente->quantite_equivalente) }} pain)</div>
+                        <div class="list-item-sub">{{ $vente->descriptionPieces() }}</div>
                     </div>
                     <div class="list-item-right" style="display:flex;align-items:center;gap:8px">
                         <span style="font-size:14px;font-weight:700;color:#111827">

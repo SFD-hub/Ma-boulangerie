@@ -41,8 +41,7 @@
                     <span style="font-size:14px;color:#374151">{{ $ligne['label'] }}</span>
                 </div>
                 <span style="font-size:15px;font-weight:800;color:{{ $ligne['couleur'] }}">
-                    {{ number_format($ligne['valeur'], 0, ',', ' ') }}
-                    <span style="font-size:12px;font-weight:500;color:#9CA3AF">pains</span>
+                    {{ \App\Support\Nombre::pains($ligne['valeur']) }}
                 </span>
             </div>
         @endforeach
@@ -61,7 +60,7 @@
                 Taux de vente
             </div>
             <div style="font-size:11px;color:#9CA3AF">
-                {{ number_format($totalPainsVendus, 0, ',', ' ') }} vendus / {{ number_format($totalPainsDistribues, 0, ',', ' ') }} distribués
+                Vendus : {{ \App\Support\Nombre::pains($totalPainsVendus) }} · Distribués : {{ \App\Support\Nombre::pains($totalPainsDistribues) }}
             </div>
         </div>
         <div style="font-size:36px;font-weight:900;color:{{ $tauxCouleur }};line-height:1">
@@ -130,8 +129,8 @@
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 <div style="background:#FFF7ED;border-radius:12px;padding:12px;text-align:center">
-                    <div style="font-size:22px;font-weight:800;color:#F97316">{{ number_format($ml['pains_vendus'], 0, ',', ' ') }}</div>
-                    <div style="font-size:12px;color:#9CA3AF;margin-top:2px">pains vendus</div>
+                    <div style="font-size:16px;font-weight:800;color:#F97316">{{ \App\Support\Nombre::pains($ml['pains_vendus']) }}</div>
+                    <div style="font-size:12px;color:#9CA3AF;margin-top:2px">vendus</div>
                 </div>
                 <div style="background:#ECFDF5;border-radius:12px;padding:12px;text-align:center">
                     <div style="font-size:16px;font-weight:800;color:#059669">{{ number_format($ml['montant_encaisse'], 0, ',', ' ') }}</div>

@@ -33,11 +33,18 @@ class DepotController extends Controller
             ->get();
         $defaultProduitId = Produit::defaultIdPour($boulangerie_id);
 
-        $totalQuantite = (float) $ventes->sum('quantite_equivalente');
+        $totalQuantite = $ventes->sum('parts') / 6;
         $totalMontant  = (float) $ventes->sum('montant');
 
+        $boulangerie = auth()->user()->boulangerie;
+        $prix = [
+            'entier' => (int) ($boulangerie->prix_boutique_entier ?? 150),
+            'moitie' => (int) ($boulangerie->prix_boutique_moitie ?? 75),
+            'tiers'  => (int) ($boulangerie->prix_boutique_tiers ?? 50),
+        ];
+
         return view('depot.index', compact(
-            'date', 'ventes', 'produits', 'defaultProduitId', 'totalQuantite', 'totalMontant'
+            'date', 'ventes', 'produits', 'defaultProduitId', 'totalQuantite', 'totalMontant', 'prix'
         ));
     }
 
@@ -51,13 +58,10 @@ class DepotController extends Controller
             'nombre_entiers' => 'nullable|integer|min:0',
             'nombre_moities' => 'nullable|integer|min:0',
             'nombre_tiers'   => 'nullable|integer|min:0',
-            'montant'        => 'required|numeric|min:0.01',
         ], [
             'produit_id.required'        => 'Le produit est obligatoire.',
             'date_vente.required'        => 'La date est obligatoire.',
             'date_vente.before_or_equal' => 'La date ne peut pas être dans le futur.',
-            'montant.required'           => 'Le montant est obligatoire.',
-            'montant.min'                => 'Le montant doit être supérieur à 0.',
         ]);
 
         $entiers = (int) ($validated['nombre_entiers'] ?? 0);
@@ -70,16 +74,24 @@ class DepotController extends Controller
             );
         }
 
-        $quantiteEquivalente = round($entiers + $moities * 0.5 + $tiers / 3, 2);
+        // Le montant n'est jamais saisi : il est calculé ici à partir des prix
+        // définis par le propriétaire (Paramètres), donc impossible à falsifier.
+        $boulangerie = auth()->user()->boulangerie;
+        $montant = $entiers * (int) $boulangerie->prix_boutique_entier
+                 + $moities * (int) $boulangerie->prix_boutique_moitie
+                 + $tiers   * (int) $boulangerie->prix_boutique_tiers;
+
+        // Quantité en sixièmes de pain (entier = 6, moitié = 3, tiers = 2) :
+        // nombres entiers uniquement, donc aucun arrondi cumulé sur le stock.
+        $parts = $entiers * 6 + $moities * 3 + $tiers * 2;
 
         $produit    = Produit::findOrFail($validated['produit_id']);
-        $disponible = $produit->painsDisponibles();
+        $disponible = $produit->partsDisponibles();
 
-        if (round($quantiteEquivalente * 100) > round($disponible * 100)) {
-            $reste = max(0, $disponible);
+        if ($parts > $disponible) {
+            $reste = max(0, $disponible) / 6;
             return redirect()->back()->withInput()->with('error',
-                'Il ne reste que ' . Nombre::qte($reste) . ' pain' . ($reste > 1 ? 's' : '')
-                . ' disponible' . ($reste > 1 ? 's' : '') . ' pour « ' . $produit->nom . ' ».'
+                'Il ne reste que ' . Nombre::pains($reste) . ' disponible pour « ' . $produit->nom . ' ».'
             );
         }
 
@@ -90,13 +102,14 @@ class DepotController extends Controller
             'nombre_entiers'       => $entiers,
             'nombre_moities'       => $moities,
             'nombre_tiers'         => $tiers,
-            'quantite_equivalente' => $quantiteEquivalente,
-            'montant'              => $validated['montant'],
+            'parts'                => $parts,
+            'quantite_equivalente' => round($parts / 6, 2),
+            'montant'              => $montant,
         ]);
 
         ActivityLog::record(
             'vente_depot',
-            auth()->user()->name . ' a enregistré une vente Boutique (' . $vente->descriptionPieces() . ') pour ' . number_format($validated['montant'], 0, ',', ' ') . ' FCFA',
+            auth()->user()->name . ' a enregistré une vente Boutique (' . $vente->descriptionPieces() . ') pour ' . number_format($montant, 0, ',', ' ') . ' FCFA',
             $boulangerie_id,
             'vente'
         );

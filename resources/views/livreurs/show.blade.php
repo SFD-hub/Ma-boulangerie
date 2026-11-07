@@ -90,7 +90,7 @@
                 <span style="font-size:14px;color:#374151">Pains vendus</span>
             </div>
             @if($aVersement)
-                <span style="font-size:14px;font-weight:700;color:#10B981">{{ \App\Support\Nombre::qte($derniereDist->pains_vendus) }}&nbsp;pains</span>
+                <span style="font-size:14px;font-weight:700;color:#10B981">{{ \App\Support\Nombre::pains($derniereDist->pains_vendus) }}</span>
             @elseif($regleeSurplus)
                 <span style="font-size:13px;color:#9CA3AF">—</span>
             @else
@@ -105,7 +105,7 @@
                 <span style="font-size:14px;color:#374151">Invendus</span>
             </div>
             @if($aVersement)
-                <span style="font-size:14px;font-weight:700;color:#F97316">{{ \App\Support\Nombre::qte($derniereDist->invendus) }}&nbsp;pains</span>
+                <span style="font-size:14px;font-weight:700;color:#F97316">{{ \App\Support\Nombre::pains($derniereDist->invendus) }}</span>
             @elseif($regleeSurplus)
                 <span style="font-size:13px;color:#9CA3AF">—</span>
             @else

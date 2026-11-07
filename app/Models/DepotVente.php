@@ -18,6 +18,7 @@ class DepotVente extends Model
         'nombre_entiers',
         'nombre_moities',
         'nombre_tiers',
+        'parts',
         'quantite_equivalente',
         'montant',
     ];
@@ -27,6 +28,7 @@ class DepotVente extends Model
         'nombre_entiers' => 'integer',
         'nombre_moities' => 'integer',
         'nombre_tiers' => 'integer',
+        'parts' => 'integer',
         'quantite_equivalente' => 'decimal:2',
         'montant' => 'decimal:2',
     ];

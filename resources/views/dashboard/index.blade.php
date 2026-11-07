@@ -42,9 +42,9 @@
                 Pains distribués
             </div>
             <div style="font-size:34px;font-weight:800;color:#111827;line-height:1">
-                {{ \App\Support\Nombre::qte($painsDistribues) }}
+                {{ \App\Support\Nombre::painsEntiers($painsDistribues) }}
             </div>
-            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">pains</div>
+            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">{{ \App\Support\Nombre::painsLegende($painsDistribues) }}</div>
         </a>
 
         {{-- Encaissé du jour — fond orange/beige --}}

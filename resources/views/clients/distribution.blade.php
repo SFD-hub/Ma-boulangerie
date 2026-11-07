@@ -32,9 +32,9 @@
                 Distribué
             </div>
             <div style="font-size:34px;font-weight:800;color:#111827;line-height:1">
-                {{ \App\Support\Nombre::qte($totalDistribue) }}
+                {{ \App\Support\Nombre::painsEntiers($totalDistribue) }}
             </div>
-            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">pains</div>
+            <div style="font-size:13px;color:#9CA3AF;margin-top:5px;font-weight:500">{{ \App\Support\Nombre::painsLegende($totalDistribue) }}</div>
         </div>
     </div>
 
@@ -69,7 +69,7 @@
                     <div class="list-item-right" style="display:flex;align-items:center;gap:8px">
                         <span class="badge {{ $badgeClass }}">{{ $l['typeLabel'] }}</span>
                         <span style="font-size:14px;font-weight:700;color:#111827">
-                            {{ \App\Support\Nombre::qte($l['quantite']) }} pain{{ $l['quantite'] > 1 ? 's' : '' }}
+                            {{ \App\Support\Nombre::pains($l['quantite']) }}
                         </span>
                     </div>
                 </a>

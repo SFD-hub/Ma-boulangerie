@@ -340,7 +340,9 @@
             const invEntiers = parseInt(document.getElementById('invEntiers')?.value || 0);
             const invMoities = parseInt(document.getElementById('invMoities')?.value || 0);
             const invTiers   = parseInt(document.getElementById('invTiers')?.value || 0);
-            const invendus   = invEntiers + invMoities * 0.5 + invTiers / 3;
+            // Sixièmes de pain (entier = 6, moitié = 3, tiers = 2) : nombres entiers,
+            // même calcul que le serveur (LivreurController::verser), donc aucun écart.
+            const invParts   = invEntiers * 6 + invMoities * 3 + invTiers * 2;
 
             const verse          = parseFloat(document.getElementById('montantInput')?.value || 0);
 
@@ -348,8 +350,20 @@
             const reliquatLine = document.getElementById('reliquatLine');
             const surplusLine  = document.getElementById('surplusLine');
             const rAttenduEl   = document.getElementById('rAttendu');
-            const vendus       = Math.max(0, pains - invendus);
-            const fmt          = (n) => n.toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+            const vendusParts  = Math.max(0, pains * 6 - invParts);
+            // Même présentation que Nombre::pains() côté serveur : "3 pains,
+            // 1 moitié et 1 tiers", jamais de décimale.
+            const fmtParts     = (p) => {
+                let e = Math.floor(p / 6), r = p % 6;
+                // Reste de 1 sixième = aucun morceau vendu : on reprend un pain (7 sixièmes = 1 moitié + 2 tiers).
+                if (r === 1 && e >= 1) { e -= 1; r = 7; }
+                const reste = { 0: '', 1: '1 sixième', 2: '1 tiers', 3: '1 moitié', 4: '2 tiers', 5: '1 moitié et 1 tiers', 7: '1 moitié et 2 tiers' }[r];
+                if (e === 0) return reste || '0 pain';
+                const base = e + ' pain' + (e > 1 ? 's' : '');
+                return reste ? base + ((r === 5 || r === 7) ? ', ' : ' et ') + reste : base;
+            };
+            const invendusTxt  = fmtParts(invParts);
+            const vendusTxt    = fmtParts(vendusParts);
 
             let reliquat, surplus;
 
@@ -358,21 +372,21 @@
                 surplus  = Math.max(0, verse - reliquatActuel);
 
                 document.getElementById('rPains').textContent    = pains + ' pains';
-                document.getElementById('rInvendus').textContent = fmt(invendus) + ' pains';
-                document.getElementById('rVendus').textContent   = fmt(vendus) + ' pains';
+                document.getElementById('rInvendus').textContent = invendusTxt;
+                document.getElementById('rVendus').textContent   = vendusTxt;
                 if (rAttenduEl) {
                     rAttenduEl.parentElement.children[0].textContent = 'Reliquat restant dû';
                     rAttenduEl.textContent = reliquatActuel.toLocaleString('fr-FR') + ' FCFA';
                     rAttenduEl.style.color = '#EF4444';
                 }
             } else {
-                const attendu = vendus * prix;
+                const attendu = Math.round(vendusParts * prix / 6);
                 reliquat = Math.max(0, attendu - verse);
                 surplus  = Math.max(0, verse - attendu);
 
                 document.getElementById('rPains').textContent    = pains + ' pains';
-                document.getElementById('rInvendus').textContent = fmt(invendus) + ' pains';
-                document.getElementById('rVendus').textContent   = fmt(vendus) + ' pains';
+                document.getElementById('rInvendus').textContent = invendusTxt;
+                document.getElementById('rVendus').textContent   = vendusTxt;
                 if (rAttenduEl) {
                     rAttenduEl.parentElement.children[0].textContent = 'Montant attendu';
                     rAttenduEl.textContent = attendu.toLocaleString('fr-FR') + ' FCFA';

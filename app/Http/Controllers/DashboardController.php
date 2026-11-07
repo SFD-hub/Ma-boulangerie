@@ -38,9 +38,9 @@ class DashboardController extends Controller
             + (float) ConsommationAbonne::whereHas('clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
                 ->whereDate('date_consommation', $today)
                 ->sum('quantite')
-            + (float) DepotVente::where('boulangerie_id', $boulangerie_id)
+            + (int) DepotVente::where('boulangerie_id', $boulangerie_id)
                 ->whereDate('date_vente', $today)
-                ->sum('quantite_equivalente');
+                ->sum('parts') / 6;
 
         // Stock farine (en sacs)
         $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)

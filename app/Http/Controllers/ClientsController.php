@@ -97,9 +97,9 @@ class ClientsController extends Controller
 
         // Boutique : vente directe, sans "client" nommé — une seule ligne
         // agrégée pour la journée (même traitement que sur Encaissé du jour).
-        $totalDepot = (float) DepotVente::where('boulangerie_id', $boulangerie_id)
+        $totalDepot = (int) DepotVente::where('boulangerie_id', $boulangerie_id)
             ->whereDate('date_vente', $date)
-            ->sum('quantite_equivalente');
+            ->sum('parts') / 6;
 
         $lignes = $livreurs
             ->filter(fn (Livreur $l) => $quantiteParLivreur->has($l->id))

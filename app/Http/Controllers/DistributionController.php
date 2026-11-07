@@ -70,7 +70,7 @@ class DistributionController extends Controller
         // On attribue toujours des pains entiers — si le Dépôt a déjà vendu
         // une fraction du stock, on arrondit à l'entier inférieur (on ne peut
         // pas donner 0,33 pain à un livreur).
-        $disponible = (int) floor($produit->painsDisponibles($distribution->id));
+        $disponible = $produit->painsEntiersDisponibles($distribution->id);
 
         if ($validated['nombre_pains'] > $disponible) {
             $reste = max(0, $disponible);

@@ -39,6 +39,26 @@
                        placeholder="Dakar, Sénégal">
             </div>
 
+            <div style="font-size:13px;font-weight:700;color:#111827;margin:20px 0 4px;padding-top:16px;border-top:1px solid #E5E7EB">Prix de vente Boutique (FCFA)</div>
+            <div style="font-size:12px;color:#6B7280;margin-bottom:12px">Le montant d'une vente Boutique est calculé automatiquement avec ces prix.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Entier</label>
+                    <input class="form-input" type="number" name="prix_boutique_entier" min="1" required
+                           value="{{ old('prix_boutique_entier', $boulangerie->prix_boutique_entier ?? 150) }}">
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Moitié</label>
+                    <input class="form-input" type="number" name="prix_boutique_moitie" min="1" required
+                           value="{{ old('prix_boutique_moitie', $boulangerie->prix_boutique_moitie ?? 75) }}">
+                </div>
+                <div class="form-group" style="margin-bottom:0">
+                    <label class="form-label">Tiers</label>
+                    <input class="form-input" type="number" name="prix_boutique_tiers" min="1" required
+                           value="{{ old('prix_boutique_tiers', $boulangerie->prix_boutique_tiers ?? 50) }}">
+                </div>
+            </div>
+
 <button type="submit" class="btn btn-primary btn-full">Enregistrer</button>
         </form>
     </div>
