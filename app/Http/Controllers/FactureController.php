@@ -48,6 +48,16 @@ class FactureController extends Controller
             'prix_unitaire.required' => 'Le prix unitaire est obligatoire.',
         ]);
 
+        $doublon = Facture::where('client_abonne_id', $facture->client_abonne_id)->where('id', '!=', $facture->id)
+            ->where('mois', $validated['mois'])->where('annee', $validated['annee'])->exists();
+        if ($doublon) {
+            return redirect()->back()->withInput()->with('error', 'Une facture existe déjà pour ce mois.');
+        }
+
+        if ((float) $validated['montant_total'] < $facture->montantPaye()) {
+            return redirect()->back()->withInput()->with('error', 'Le montant ne peut pas être inférieur à ce qui a déjà été payé (' . number_format($facture->montantPaye(), 0, ',', ' ') . ' FCFA).');
+        }
+
         // Le statut n'est jamais modifiable à la main : il est toujours
         // recalculé à partir des paiements réellement enregistrés (voir
         // Facture::syncStatut()), y compris si le montant vient de changer ici.
@@ -64,6 +74,11 @@ class FactureController extends Controller
         abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
         $clientAbonne = $facture->clientAbonne;
+
+        if ($facture->paiementsFactures()->exists()) {
+            return redirect()->back()->with('error', 'Cette facture a des paiements enregistrés : supprimez d\'abord les paiements.');
+        }
+
         $facture->delete();
 
         return redirect()->route('clients-abonnes.factures.historique', $clientAbonne)

@@ -197,6 +197,10 @@ class ClientAbonneController extends Controller
             'quantite.min'                   => 'La quantité doit être au moins 1.',
         ]);
 
+        if ($refus = \App\Models\Facture::refusMoisFacture($clientAbonne->id, $validated['date_consommation'])) {
+            return redirect()->back()->withInput()->with('error', $refus);
+        }
+
         $produitId = (int) ($validated['produit_id'] ?? \App\Models\Produit::painAbonnes()?->id);
 
         if ($refus = \App\Models\Produit::refusConsommationAbonne($validated['date_consommation'], (int) $validated['quantite'], null, $produitId)) {

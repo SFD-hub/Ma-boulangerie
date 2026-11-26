@@ -43,6 +43,22 @@ class Facture extends Model
         return $this->hasMany(PaiementFacture::class);
     }
 
+    /**
+     * Message de refus si la date tombe dans un mois déjà facturé pour cet abonné (les consommations
+     * d'un mois facturé ne changent plus, sinon la facture serait fausse) ; null sinon.
+     */
+    public static function refusMoisFacture(int $clientAbonneId, $date): ?string
+    {
+        $d = \Illuminate\Support\Carbon::parse($date);
+
+        $existe = static::where('client_abonne_id', $clientAbonneId)
+            ->where('mois', $d->month)->where('annee', $d->year)->exists();
+
+        return $existe
+            ? 'Le mois de ' . $d->locale('fr')->isoFormat('MMMM YYYY') . ' est déjà facturé : ses consommations ne peuvent plus changer. Supprimez la facture pour les corriger.'
+            : null;
+    }
+
     public function nomMois(): string
     {
         return ucfirst(\Carbon\Carbon::create()->month($this->mois)->locale('fr')->monthName);

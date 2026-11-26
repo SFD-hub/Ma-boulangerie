@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\ConsommationAbonne;
 use App\Models\ClientAbonne;
+use App\Models\Facture;
 use App\Models\Produit;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -60,6 +61,10 @@ class ConsommationAbonneController extends Controller
         if (!$client || $client->boulangerie_id !== $boulangerie_id) {
             return redirect()->back()
                 ->with('error', 'Client invalide.');
+        }
+
+        if ($refus = Facture::refusMoisFacture((int) $validated['client_abonne_id'], $validated['date_consommation'])) {
+            return redirect()->back()->withInput()->with('error', $refus);
         }
 
         $produitId = (int) ($validated['produit_id'] ?? Produit::painAbonnes()?->id);
@@ -133,6 +138,13 @@ class ConsommationAbonneController extends Controller
                 ->with('error', 'Client invalide.');
         }
 
+        // L'ancien mois (avant déplacement) et le nouveau ne doivent pas être facturés.
+        $refus = Facture::refusMoisFacture($consommationAbonne->client_abonne_id, $consommationAbonne->date_consommation)
+            ?? Facture::refusMoisFacture((int) $validated['client_abonne_id'], $validated['date_consommation']);
+        if ($refus) {
+            return redirect()->back()->withInput()->with('error', $refus);
+        }
+
         $produitId = (int) ($validated['produit_id'] ?? $consommationAbonne->produit_id ?? Produit::painAbonnes()?->id);
 
         if ($refus = Produit::refusConsommationAbonne($validated['date_consommation'], (int) $validated['quantite'], $consommationAbonne->id, $produitId)) {
@@ -155,6 +167,11 @@ class ConsommationAbonneController extends Controller
         abort_if(!$consommationAbonne->clientAbonne || $consommationAbonne->clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $clientId = $consommationAbonne->client_abonne_id;
+
+        if ($refus = Facture::refusMoisFacture($clientId, $consommationAbonne->date_consommation)) {
+            return redirect()->back()->with('error', $refus);
+        }
+
         $consommationAbonne->delete();
 
         return redirect()->route('clients-abonnes.show', $clientId)

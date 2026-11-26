@@ -114,9 +114,15 @@ class BilanCalcul
         $reparation     = (float) (($d['reparation'] ?? 0) + ($d['entretien'] ?? 0));
         // « Autres » : divers, anciennes catégories (sel/huile saisis à la main avant le module
         // Stock) et achats d'un produit créé à la main (non consommé automatiquement).
-        $autres         = (float) (($d['autre'] ?? 0) + ($d['divers'] ?? 0)
-                                + ($d['huile'] ?? 0) + ($d['sel'] ?? 0)
-                                + ($d['achat_stock'] ?? 0));
+        // Fourre-tout : toute catégorie qui n'est ni un achat de stock automatique ni une ligne nommée
+        // ci-dessus tombe ici, pour qu'aucune dépense ne puisse manquer au bilan.
+        $nommees = ['salaire_gerant', 'salaire', 'salaire_employe', 'eau', 'electricite', 'carburant', 'transport', 'reparation', 'entretien'];
+        $autres  = 0.0;
+        foreach ($d as $categorie => $total) {
+            if (! in_array($categorie, self::ACHATS_STOCK, true) && ! in_array($categorie, $nommees, true)) {
+                $autres += (float) $total;
+            }
+        }
 
         $totalConso = $consoFarine + $consoLevure + $consoProduit + $consoSel + $consoHuile + $consoGasoil;
         $autresTotal = $salaireGerant + $salaireEmploye + $eau + $electricite + $carburant + $transport + $reparation + $autres;
