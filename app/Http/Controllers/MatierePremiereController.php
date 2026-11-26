@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\InventaireStock;
 use App\Models\MatierePremiere;
+use App\Models\RetraitStock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -15,7 +18,9 @@ class MatierePremiereController extends Controller
         $matieresPremières = MatierePremiere::where('boulangerie_id', $boulangerie_id)
             ->with('achats')
             ->orderBy('nom')
-            ->get();
+            ->get()
+            ->sortBy(fn (MatierePremiere $m) => $m->ordre())
+            ->values();
 
         return view('matieres-premieres.index', compact('matieresPremières'));
     }
@@ -58,9 +63,51 @@ class MatierePremiereController extends Controller
             ->with('success', 'Matière première créée avec succès.');
     }
 
-    public function show(MatierePremiere $matierePremiere)
+    // Page de détail d'un produit du stock : quantité, valeur, achats et,
+    // pour sel/huile/gasoil, les validations « terminé ».
+    public function show(MatierePremiere $matierePremiere): View
     {
-        // Non utilisé pour les matières premières
+        abort_if($matierePremiere->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+
+        // Historique des achats (les 3 derniers) : seulement les vrais achats. Le stock
+        // initial (sans dépense) est présenté à part.
+        $achats = $matierePremiere->achats()
+            ->where('depart', false)
+            ->orderByDesc('date_achat')
+            ->orderByDesc('id')
+            ->limit(3)
+            ->get();
+
+        $stocksInitiaux = $matierePremiere->achats()
+            ->where('depart', true)
+            ->orderBy('date_achat')
+            ->orderBy('id')
+            ->get();
+
+        $totaux = $matierePremiere->achats()
+            ->selectRaw('COALESCE(SUM(quantite), 0) as quantite, COALESCE(SUM(montant), 0) as montant, COUNT(*) as nombre')
+            ->first();
+
+        // Prix moyen pondéré de toutes les unités achetées ; la valeur du stock
+        // est une estimation (prix moyen × quantité restante).
+        $prixMoyen = (float) $totaux->quantite > 0 ? (float) $totaux->montant / (float) $totaux->quantite : null;
+        // Valeur réelle du stock suivie au prix moyen (achats, consommation, inventaire).
+        $valeur    = $prixMoyen !== null ? (int) round((float) $matierePremiere->valeur_stock) : null;
+
+        $dernierAchat = $achats->first();
+        $dernierPrix  = $dernierAchat && (float) $dernierAchat->quantite > 0
+            ? (float) $dernierAchat->montant / (float) $dernierAchat->quantite
+            : null;
+
+        // Dernière validation « terminé » (sel, huile, gasoil) : sert à la carte
+        // « Dernier sac/bidon terminé » et au bouton Supprimer.
+        $dernierRetrait = $matierePremiere->retrait_manuel
+            ? $matierePremiere->retraits()->orderByDesc('date_retrait')->orderByDesc('id')->first()
+            : null;
+
+        return view('matieres-premieres.show', compact(
+            'matierePremiere', 'achats', 'stocksInitiaux', 'totaux', 'prixMoyen', 'valeur', 'dernierRetrait'
+        ));
     }
 
     public function edit(MatierePremiere $matierePremiere): View
@@ -92,11 +139,18 @@ class MatierePremiereController extends Controller
             'seuil_alerte.max' => 'Le seuil est trop élevé.',
         ]);
 
-        $matierePremiere->update([
-            'nom' => $validated['nom'],
-            'stock_actuel' => $validated['stock_actuel'],
-            'seuil_alerte' => $validated['seuil_alerte'],
-        ]);
+        DB::transaction(function () use ($matierePremiere, $validated) {
+            $mp = MatierePremiere::where('id', $matierePremiere->id)->lockForUpdate()->firstOrFail();
+
+            $mp->update([
+                'nom' => $validated['nom'],
+                'seuil_alerte' => $validated['seuil_alerte'],
+            ]);
+
+            // Une correction de stock à la main est un inventaire : l'écart est tracé et valorisé
+            // (perte ou gain), il ne disparaît pas silencieusement.
+            InventaireStock::enregistrer($mp, (float) $validated['stock_actuel']);
+        });
 
         return redirect()->route('matieres-premieres.index')
             ->with('success', 'Matière première mise à jour avec succès.');

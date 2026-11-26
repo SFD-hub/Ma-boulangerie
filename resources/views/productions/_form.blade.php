@@ -45,6 +45,13 @@
 </div>
 
 <div class="form-group">
+    <label class="form-label">Paquets de produit <span style="font-weight:400;color:#9CA3AF">(facultatif)</span></label>
+    <input class="form-input" type="number" name="nombre_paquets_produit" min="0" step="0.5"
+           value="{{ old('nombre_paquets_produit', isset($production) && (float) $production->quantite_produit > 0 ? $production->quantite_produit : '') }}"
+           placeholder="ex: 1">
+</div>
+
+<div class="form-group">
     <label class="form-label">Pains produits *</label>
     <input class="form-input" type="number" name="nombre_pains_produits" min="1"
            value="{{ old('nombre_pains_produits', isset($production) ? $production->nombre_pains_produits : '') }}"

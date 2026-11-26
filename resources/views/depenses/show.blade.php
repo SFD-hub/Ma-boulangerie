@@ -7,7 +7,7 @@
     @php
         $libelles = \App\Http\Controllers\DepenseController::CATEGORIES_LIBELLES;
         $libelle  = $libelles[$depense->categorie] ?? $depense->categorie;
-        $isAuto   = in_array($depense->categorie, ['achat_farine', 'achat_levure']);
+        $isAuto   = in_array($depense->categorie, \App\Http\Controllers\DepenseController::CATEGORIES_AUTO, true);
     @endphp
 
     {{-- ── En-tête ── --}}
@@ -56,7 +56,7 @@
     @if($isAuto)
         <div style="background:#FFF7ED;border-radius:12px;padding:12px 16px;font-size:13px;color:#9A3412;margin-bottom:16px">
             Cette dépense a été créée automatiquement lors d'un achat de stock.
-            Pour la modifier, allez dans <strong>Stock → Historique achats</strong>.
+            Pour la modifier, allez dans <strong>Achats</strong>.
         </div>
     @else
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">

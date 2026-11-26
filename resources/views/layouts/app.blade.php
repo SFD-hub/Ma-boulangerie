@@ -176,10 +176,23 @@
         }
 
         /* ── Flash messages ── */
-        .flash {
-            padding: 12px 14px; border-radius: var(--radius-sm);
-            margin-bottom: 14px; font-size: 14px; font-weight: 500;
+        /* Notification après une action : flotte en haut de l'écran (ne décale pas la
+           page, reste visible même si l'on a défilé) puis disparaît toute seule. */
+        .flash-stack {
+            position: fixed; top: calc(var(--top-h, 56px) + 10px); left: 0; right: 0;
+            z-index: 400; display: flex; flex-direction: column; align-items: center;
+            gap: 8px; padding: 0 16px; pointer-events: none;
         }
+        .flash {
+            pointer-events: auto; cursor: pointer; width: max-content; max-width: min(100%, 520px);
+            padding: 12px 16px; border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 500; white-space: pre-line;
+            box-shadow: 0 6px 20px rgba(0,0,0,.14);
+            animation: flashIn .25s ease-out;
+            transition: opacity .4s ease, transform .4s ease;
+        }
+        .flash.flash-hide { opacity: 0; transform: translateY(-8px); }
+        @keyframes flashIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .flash-success { background: var(--green-bg); color: #065F46; border: 1px solid #6EE7B7; }
         .flash-error   { background: var(--red-bg);   color: #991B1B; border: 1px solid #FCA5A5; }
         .flash-warning { background: var(--yellow-bg); color: #92400E; border: 1px solid #FCD34D; }
@@ -705,9 +718,13 @@
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                     Accueil
                 </a>
-                <a href="{{ route('matieres-premieres.index') }}" class="sidebar-link {{ request()->routeIs('matieres-premieres.*') || request()->routeIs('achats-matieres-premieres.*') ? 'active' : '' }}">
+                <a href="{{ route('matieres-premieres.index') }}" class="sidebar-link {{ request()->routeIs('matieres-premieres.*', 'inventaire.*', 'stock-initial.*') ? 'active' : '' }}">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                     Stock
+                </a>
+                <a href="{{ route('achats-matieres-premieres.index') }}" class="sidebar-link {{ request()->routeIs('achats-matieres-premieres.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    Achats
                 </a>
                 <a href="{{ route('productions.index') }}" class="sidebar-link {{ request()->routeIs('productions.*') ? 'active' : '' }}">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
@@ -724,6 +741,10 @@
                 <a href="{{ route('depot.index') }}" class="sidebar-link {{ request()->routeIs('depot.*') ? 'active' : '' }}">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9.75L4.5 4.5h15L21 9.75m-18 0v9a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-9m-18 0h18M9 13.5a1.5 1.5 0 003 0"/></svg>
                     Boutique
+                </a>
+                <a href="{{ route('pain-restant.index') }}" class="sidebar-link {{ request()->routeIs('pain-restant.*') ? 'active' : '' }}">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    Pain restant
                 </a>
                 <a href="{{ route('produits.index') }}" class="sidebar-link {{ request()->routeIs('produits.*') ? 'active' : '' }}">
                     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
@@ -876,14 +897,18 @@
 
     {{-- Page content --}}
     <div class="main-wrap">
-        @if(session('success'))
-            <div class="flash flash-success">{{ session('success') }}</div>
-        @endif
-        @if(session('error'))
-            <div class="flash flash-error">{{ session('error') }}</div>
-        @endif
-        @if(session('warning'))
-            <div class="flash flash-warning">{{ session('warning') }}</div>
+        @if(session('success') || session('error') || session('warning'))
+            <div class="flash-stack" role="status" aria-live="polite">
+                @if(session('success'))
+                    <div class="flash flash-success" data-delai="3000">{{ session('success') }}</div>
+                @endif
+                @if(session('error'))
+                    <div class="flash flash-error" data-delai="6000">{{ session('error') }}</div>
+                @endif
+                @if(session('warning'))
+                    <div class="flash flash-warning" data-delai="5000">{{ session('warning') }}</div>
+                @endif
+            </div>
         @endif
 
         @yield('content')
@@ -1044,12 +1069,21 @@
             <div class="more-sheet-body">
 
             <a href="{{ route('matieres-premieres.index') }}" class="more-item" onclick="closeMore()"
-               style="{{ request()->routeIs('matieres-premieres.*') || request()->routeIs('achats-matieres-premieres.*') ? 'color:var(--orange)' : '' }}">
+               style="{{ request()->routeIs('matieres-premieres.*', 'inventaire.*', 'stock-initial.*') ? 'color:var(--orange)' : '' }}">
                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round"
                           d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
                 Stock
+            </a>
+
+            <a href="{{ route('achats-matieres-premieres.index') }}" class="more-item" onclick="closeMore()"
+               style="{{ request()->routeIs('achats-matieres-premieres.*') ? 'color:var(--orange)' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                Achats
             </a>
 
             <a href="{{ route('produits.index') }}" class="more-item" onclick="closeMore()"
@@ -1076,6 +1110,14 @@
                           d="M3 9.75L4.5 4.5h15L21 9.75m-18 0v9a1.5 1.5 0 001.5 1.5h15a1.5 1.5 0 001.5-1.5v-9m-18 0h18M9 13.5a1.5 1.5 0 003 0"/>
                 </svg>
                 Boutique
+            </a>
+
+            <a href="{{ route('pain-restant.index') }}" class="more-item" onclick="closeMore()"
+               style="{{ request()->routeIs('pain-restant.*') ? 'color:var(--orange)' : '' }}">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                Pain restant
             </a>
 
             @php $userRole = auth()->user()?->role?->nom; @endphp
@@ -1286,16 +1328,49 @@
                 .catch(function() {});
         })();
 
-        // Auto-dismiss success flash after 2 seconds
+        // Après une action (formulaire POST/PUT/DELETE), si l'on revient sur la MÊME page
+        // (refus, erreur, suppression depuis une liste…), on retrouve la même position de
+        // défilement au lieu de remonter en haut : la notification flottante s'affiche là
+        // où l'on est. Une redirection vers une autre page démarre normalement en haut.
         (function() {
-            var flash = document.querySelector('.flash-success');
-            if (flash) {
-                setTimeout(function() {
-                    flash.style.transition = 'opacity .4s';
-                    flash.style.opacity = '0';
-                    setTimeout(function() { flash.remove(); }, 400);
-                }, 2000);
-            }
+            var cle = 'scrollApresAction';
+            var url = location.pathname + location.search;
+
+            try {
+                var brut = sessionStorage.getItem(cle);
+                if (brut) {
+                    sessionStorage.removeItem(cle);
+                    var memo = JSON.parse(brut);
+                    if (memo && memo.url === url && Date.now() - memo.t < 15000) {
+                        window.scrollTo(0, memo.y);
+                    }
+                }
+            } catch (e) {}
+
+            document.addEventListener('submit', function(e) {
+                var form = e.target;
+                if (!form || (form.method || '').toLowerCase() !== 'post') return;
+                try {
+                    sessionStorage.setItem(cle, JSON.stringify({ url: url, y: window.scrollY, t: Date.now() }));
+                } catch (err) {}
+            });
+        })();
+
+        // Notifications après une action : disparaissent seules (3 s succès, 5 s
+        // avertissement, 6 s erreur) ou au toucher.
+        (function() {
+            document.querySelectorAll('.flash').forEach(function(flash) {
+                var fermer = function() {
+                    flash.classList.add('flash-hide');
+                    setTimeout(function() {
+                        var pile = flash.parentNode;
+                        flash.remove();
+                        if (pile && pile.classList.contains('flash-stack') && !pile.children.length) pile.remove();
+                    }, 400);
+                };
+                flash.addEventListener('click', fermer);
+                setTimeout(fermer, parseInt(flash.getAttribute('data-delai') || '3000', 10));
+            });
         })();
 
         // Empêche la molette de la souris de modifier un champ numérique

@@ -22,6 +22,7 @@ class EncaisseController extends Controller
             'date'           => $date,
             'encaissements'  => $resume['encaissements'],
             'depotJour'      => $resume['depotJour'],
+            'restantJour'    => $resume['restantJour'],
             'totalEncaisse'  => $resume['totalEncaisse'],
         ]);
     }

@@ -17,10 +17,12 @@ class AchatMatierePremiere extends Model
         'quantite',
         'montant',
         'date_achat',
+        'depart',
     ];
 
     protected $casts = [
         'date_achat' => 'date',
+        'depart' => 'boolean',
         'montant' => 'decimal:2',
         'quantite' => 'decimal:2',
     ];

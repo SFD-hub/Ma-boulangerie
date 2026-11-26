@@ -12,11 +12,13 @@ class BilanFinancier extends Model
 
     protected $fillable = [
         'boulangerie_id', 'mois', 'annee',
-        'versements_livreurs', 'factures_abonnes', 'ventes_depot', 'recettes_total',
-        'achat_farine', 'achat_levure',
+        'versements_livreurs', 'factures_abonnes', 'ventes_depot', 'ventes_restant', 'recettes_total',
+        'achat_farine', 'achat_levure', 'achat_produit', 'achat_sel', 'achat_huile', 'achat_gasoil',
         'salaire_gerant', 'salaire_employe',
         'eau', 'electricite', 'carburant', 'transport', 'reparation', 'autres',
         'depenses_total', 'benefice',
+        'methode', 'conso_farine', 'conso_levure', 'conso_produit', 'conso_sel', 'conso_huile', 'conso_gasoil',
+        'ecarts_stock', 'achats_stock',
     ];
 
     protected function casts(): array
@@ -27,9 +29,14 @@ class BilanFinancier extends Model
             'versements_livreurs' => 'decimal:2',
             'factures_abonnes'    => 'decimal:2',
             'ventes_depot'        => 'decimal:2',
+            'ventes_restant'      => 'decimal:2',
             'recettes_total'      => 'decimal:2',
             'achat_farine'        => 'decimal:2',
             'achat_levure'        => 'decimal:2',
+            'achat_produit'       => 'decimal:2',
+            'achat_sel'           => 'decimal:2',
+            'achat_huile'         => 'decimal:2',
+            'achat_gasoil'        => 'decimal:2',
             'salaire_gerant'      => 'decimal:2',
             'salaire_employe'     => 'decimal:2',
             'eau'                 => 'decimal:2',

@@ -50,6 +50,8 @@
                        style="width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px;font-size:15px;color:#111827;box-sizing:border-box;outline:none;-webkit-appearance:none">
             </div>
 
+            @include("consommations-abonnes._pain")
+
             {{-- Nombre de pains --}}
             <div style="margin-bottom:24px">
                 <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Nombre de pains *</label>

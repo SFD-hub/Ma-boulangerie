@@ -96,6 +96,22 @@
                 </div>
             </div>
 
+            {{-- Produit utilisé (facultatif) --}}
+            @if((float) $derniere->quantite_produit > 0)
+                <div style="display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid #E5E7EB">
+                    <div style="width:42px;height:42px;border-radius:11px;background:#F5F3FF;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">
+                        📦
+                    </div>
+                    <div style="flex:1">
+                        <span style="font-size:14px;font-weight:600;color:#F97316">Produit utilisé</span>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0">
+                        <div style="font-size:20px;font-weight:800;color:#111827;line-height:1">{{ \App\Support\Nombre::qte($derniere->quantite_produit) }}</div>
+                        <div style="font-size:11px;color:#9CA3AF;margin-top:2px">paquet{{ $derniere->quantite_produit > 1 ? 's' : '' }}</div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Pains produits --}}
             <div style="display:flex;align-items:center;gap:14px;padding:11px 0">
                 <div style="width:42px;height:42px;border-radius:11px;background:#ECFDF5;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">
@@ -123,7 +139,7 @@
         </a>
     </div>
 
-    @php $apercu = $productions->skip(1)->take(4); @endphp
+    @php $apercu = $productions->skip(1)->take(3); @endphp
 
     @if($apercu->isEmpty() && !$derniere)
         <div style="text-align:center;padding:24px 0;color:#9CA3AF;font-size:14px">

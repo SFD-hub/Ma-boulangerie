@@ -17,23 +17,7 @@
 </div>
 
 {{-- Messages flash --}}
-@if(session('success'))
-    <div style="background:#ECFDF5;border:1px solid #6EE7B7;border-radius:10px;
-                padding:12px 16px;margin-bottom:16px;font-size:14px;
-                color:#065F46;display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px;flex-shrink:0">✅</span>
-        <span style="white-space:pre-line">{{ session('success') }}</span>
-    </div>
-@endif
 
-@if(session('error'))
-    <div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:10px;
-                padding:12px 16px;margin-bottom:16px;font-size:14px;
-                color:#991B1B;display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px;flex-shrink:0">⚠️</span>
-        <span>{{ session('error') }}</span>
-    </div>
-@endif
 
 {{-- Bouton sauvegarde manuelle --}}
 <div class="card" style="padding:16px;margin-bottom:16px">

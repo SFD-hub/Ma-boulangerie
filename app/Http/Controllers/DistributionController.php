@@ -67,20 +67,43 @@ class DistributionController extends Controller
         ]);
 
         $produit = Produit::findOrFail($validated['produit_id']);
-        // On attribue toujours des pains entiers — si le Dépôt a déjà vendu
-        // une fraction du stock, on arrondit à l'entier inférieur (on ne peut
-        // pas donner 0,33 pain à un livreur).
-        $disponible = $produit->painsEntiersDisponibles($distribution->id);
+        // Stock = production du jour de la distribution (sans compter cette distribution),
+        // en sixièmes de pain.
+        $date = \Carbon\Carbon::parse($validated['date_distribution'])->toDateString();
+        $disponibleParts = $produit->partsDisponibles($distribution->id, $date);
 
-        if ($validated['nombre_pains'] > $disponible) {
-            $reste = max(0, $disponible);
+        // Retours déjà saisis sur cette distribution (pains rapportés intacts le jour même).
+        $retoursParts = (int) $distribution->retours_parts;
+
+        if ($retoursParts > 0 && $date !== $distribution->date_distribution->toDateString()) {
             return redirect()->back()->withInput()->with('error',
-                'Il ne reste que ' . $reste . ' pain' . ($reste > 1 ? 's' : '')
-                . ' disponible' . ($reste > 1 ? 's' : '') . ' pour « ' . $produit->nom . ' ».'
+                'Des pains ont déjà été rapportés (retour) : annulez d\'abord les retours avant de changer la date.'
             );
         }
 
-        $montantAttendu = $validated['nombre_pains'] * $validated['prix_pain'];
+        if ($validated['nombre_pains'] * 6 < $retoursParts) {
+            return redirect()->back()->withInput()->with('error',
+                'Le nombre de pains ne peut pas être inférieur aux ' . \App\Support\Nombre::pains($retoursParts / 6) . ' déjà rapportés (retour).'
+            );
+        }
+
+        // Pains réellement confiés = donnés − retours (en sixièmes).
+        $confiesParts = $validated['nombre_pains'] * 6 - $retoursParts;
+
+        if ($confiesParts > $disponibleParts) {
+            return redirect()->back()->withInput()->with('error', $produit->messageStockInsuffisant($date, $distribution->id));
+        }
+
+        // Un vendeur de la Boutique a peut-être déjà vendu une partie de ce
+        // qu'on lui a donné : on ne peut pas réduire en dessous.
+        $partsVendues = (int) $distribution->ventesVendeur()->sum('parts');
+        if ($partsVendues > $confiesParts) {
+            return redirect()->back()->withInput()->with('error',
+                'Ce vendeur a déjà vendu ' . \App\Support\Nombre::pains($partsVendues / 6) . ' : le nombre de pains ne peut pas être inférieur.'
+            );
+        }
+
+        $montantAttendu = (int) round($confiesParts * $validated['prix_pain'] / 6);
 
         $distribution->update([
             'produit_id'        => $validated['produit_id'],

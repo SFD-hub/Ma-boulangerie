@@ -53,6 +53,7 @@
                     $badgeClass = match($l['type']) {
                         'livreur'  => 'badge-blue',
                         'client'   => 'badge-orange',
+                        'vendeur' => 'badge-green',
                         'boutique' => 'badge-yellow',
                         default    => 'badge-purple',
                     };

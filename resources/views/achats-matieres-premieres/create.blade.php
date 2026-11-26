@@ -4,7 +4,12 @@
 
 @section('content')
 
-    <a href="{{ route('matieres-premieres.index') }}" class="back-link">← Stock</a>
+    @php($produitOrigine = request('matiere') ? $matieresPremières->firstWhere('id', (int) request('matiere')) : null)
+    @if($produitOrigine)
+        <a href="{{ route('matieres-premieres.show', $produitOrigine) }}" class="back-link">← {{ $produitOrigine->nom }}</a>
+    @else
+        <a href="{{ route('achats-matieres-premieres.index') }}" class="back-link">← Achats</a>
+    @endif
 
     @if($errors->any())
         <div class="alert-danger">
@@ -17,6 +22,10 @@
 
         <form method="POST" action="{{ route('achats-matieres-premieres.store') }}">
             @csrf
+            {{-- Ouvert depuis la page d'un produit : on y retourne après l'enregistrement --}}
+            @if(old('depuis_produit', request('matiere') ? '1' : ''))
+                <input type="hidden" name="depuis_produit" value="1">
+            @endif
 
             <div class="form-group">
                 <label class="form-label">Produit *</label>
@@ -24,8 +33,8 @@
                     <option value="">Sélectionner un produit</option>
                     @foreach($matieresPremières as $mp)
                         <option value="{{ $mp->id }}"
-                                data-nom="{{ $mp->nom }}"
-                                {{ old('matiere_premiere_id') == $mp->id ? 'selected' : '' }}>
+                                data-unite="{{ $mp->unite }}" data-entier="{{ $mp->retrait_manuel ? 1 : 0 }}"
+                                {{ old('matiere_premiere_id', request('matiere')) == $mp->id ? 'selected' : '' }}>
                             {{ $mp->nom }}
                         </option>
                     @endforeach
@@ -34,19 +43,19 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">Quantité * <span id="unitLabel" style="color:var(--text2);font-weight:400">(sacs / paquets)</span></label>
-                    <input class="form-input" type="number" name="quantite" min="0.5" step="0.5"
+                    <label class="form-label">Quantité * </label>
+                    <input class="form-input" type="number" name="quantite" id="quantiteInput" min="0.5" step="0.5"
                            value="{{ old('quantite') }}" placeholder="Ex: 5.5" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Prix total (FCFA) *</label>
+                    <label class="form-label" >Prix total (FCFA) *</label>
                     <input class="form-input" type="number" name="montant" min="1"
                            value="{{ old('montant') }}" placeholder="Ex: 500000" required>
                 </div>
             </div>
 
             <div class="form-group">
-                <label class="form-label">Date d'achat *</label>
+                <label class="form-label" >Date d'achat *</label>
                 <input class="form-input" type="date" name="date_achat"
                        value="{{ old('date_achat', date('Y-m-d')) }}"
                        max="{{ date('Y-m-d') }}" required>
@@ -60,11 +69,13 @@
         function updateUnit() {
             const sel = document.getElementById('produitSelect');
             const opt = sel.options[sel.selectedIndex];
-            const nom = opt.getAttribute('data-nom') || '';
-            const label = document.getElementById('unitLabel');
-            if (nom === 'Farine') label.textContent = '(sacs)';
-            else if (nom === 'Levure') label.textContent = '(paquets)';
-            else label.textContent = '(sacs / paquets)';
+            const unite = opt.getAttribute('data-unite') || '';
+            const entier = opt.getAttribute('data-entier') === '1';
+            const champ = document.getElementById('quantiteInput');
+            // Sel, huile, gasoil : sacs/bidons entiers ; farine, levure, produit : demis acceptés.
+            champ.min = entier ? '1' : '0.5';
+            champ.step = entier ? '1' : '0.5';
+            champ.placeholder = entier ? 'Ex: 2' : 'Ex: 5.5';
         }
         updateUnit();
     </script>

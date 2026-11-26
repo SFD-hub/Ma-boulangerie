@@ -57,15 +57,13 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        MatierePremiere::firstOrCreate(
-            ['boulangerie_id' => $boulangerie->id, 'nom' => 'Farine'],
-            ['stock_actuel' => 12, 'seuil_alerte' => 3]
-        );
+        MatierePremiere::creerCatalogue($boulangerie->id);
 
-        MatierePremiere::firstOrCreate(
-            ['boulangerie_id' => $boulangerie->id, 'nom' => 'Levure'],
-            ['stock_actuel' => 4, 'seuil_alerte' => 1]
-        );
+        // Stock de départ de démonstration (seulement s'il est encore vide).
+        MatierePremiere::withoutGlobalScopes()->where('boulangerie_id', $boulangerie->id)
+            ->where('nom', 'Farine')->where('stock_actuel', 0)->update(['stock_actuel' => 12]);
+        MatierePremiere::withoutGlobalScopes()->where('boulangerie_id', $boulangerie->id)
+            ->where('nom', 'Levure')->where('stock_actuel', 0)->update(['stock_actuel' => 4]);
 
         $testPassword = env('TEST_ACCOUNT_PASSWORD', 'password');
 

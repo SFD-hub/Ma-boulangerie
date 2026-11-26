@@ -27,7 +27,7 @@
     </div>
 
     {{-- ── Détail ── --}}
-    @if($encaissements->isEmpty() && $depotJour['quantite'] === 0)
+    @if($encaissements->isEmpty() && $depotJour['quantite'] === 0 && $restantJour['sacs'] === 0)
         <div class="card">
             <div class="empty-state">
                 <p style="font-size:32px;margin-bottom:8px">💰</p>
@@ -41,6 +41,7 @@
                     $badgeClass = match($e['type']) {
                         'livreur' => 'badge-blue',
                         'client'  => 'badge-orange',
+                        'vendeur' => 'badge-green',
                         default   => 'badge-purple',
                     };
                 @endphp
@@ -72,6 +73,25 @@
                     <div class="list-item-right">
                         <span style="font-size:14px;font-weight:700;color:#111827">
                             {{ number_format($depotJour['montant'], 0, ',', ' ') }}&nbsp;FCFA
+                        </span>
+                    </div>
+                </a>
+            @endif
+
+            @if($restantJour['sacs'] > 0)
+                <a href="{{ $restantJour['route'] }}" class="list-item" style="text-decoration:none">
+                    <div style="width:44px;height:44px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+                        🥖
+                    </div>
+                    <div class="list-item-body">
+                        <div class="list-item-name">Pain restant — ventes du jour</div>
+                        <div class="list-item-sub">
+                            {{ $restantJour['sacs'] }} sac{{ $restantJour['sacs'] > 1 ? 's' : '' }}
+                        </div>
+                    </div>
+                    <div class="list-item-right">
+                        <span style="font-size:14px;font-weight:700;color:#111827">
+                            {{ number_format($restantJour['montant'], 0, ',', ' ') }}&nbsp;FCFA
                         </span>
                     </div>
                 </a>

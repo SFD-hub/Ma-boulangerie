@@ -81,7 +81,7 @@ class BoulangerieSetupController extends Controller
     }
 
     /**
-     * Crée la boulangerie et son stock de départ (Farine/Levure).
+     * Crée la boulangerie et son stock de départ (Farine, Levure, Produit, Sel, Huile, Gasoil).
      * Ne touche ni à users.boulangerie_id ni à la pivot : c'est aux
      * appelants (onboarding vs. ajout) de décider quoi faire de ces deux
      * rattachements.
@@ -97,19 +97,8 @@ class BoulangerieSetupController extends Controller
             'date_expiration_abonnement' => now()->addYear(),
         ]);
 
-        MatierePremiere::create([
-            'boulangerie_id' => $boulangerie->id,
-            'nom'            => 'Farine',
-            'stock_actuel'   => 0,
-            'seuil_alerte'   => 3,
-        ]);
-
-        MatierePremiere::create([
-            'boulangerie_id' => $boulangerie->id,
-            'nom'            => 'Levure',
-            'stock_actuel'   => 0,
-            'seuil_alerte'   => 1,
-        ]);
+        // Farine, Levure, Produit, Sel, Huile, Gasoil (unités et seuils inclus).
+        MatierePremiere::creerCatalogue($boulangerie->id);
 
         Produit::create([
             'boulangerie_id' => $boulangerie->id,

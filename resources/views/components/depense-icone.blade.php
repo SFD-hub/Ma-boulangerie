@@ -18,6 +18,11 @@ $usePng  = file_exists($pngPath);
 $couleurs = [
     'achat_farine'   => ['bg' => '#FFF3E0', 'ic' => '#EA7820'],
     'achat_levure'   => ['bg' => '#FDF4FF', 'ic' => '#A855F7'],
+    'achat_produit'  => ['bg' => '#F5F3FF', 'ic' => '#7C3AED'],
+    'achat_sel'      => ['bg' => '#F8FAFC', 'ic' => '#475569'],
+    'achat_huile'    => ['bg' => '#FFFBEB', 'ic' => '#B45309'],
+    'achat_gasoil'   => ['bg' => '#FFEDD5', 'ic' => '#EA580C'],
+    'achat_stock'    => ['bg' => '#F3F4F6', 'ic' => '#6B7280'],
     'salaire'        => ['bg' => '#EFF6FF', 'ic' => '#3B82F6'],
     'salaire_gerant' => ['bg' => '#EFF6FF', 'ic' => '#3B82F6'],
     'salaire_employe'=> ['bg' => '#F0F9FF', 'ic' => '#0284C7'],
@@ -40,6 +45,13 @@ $svgs = [
 
     // Fiole : bécher de laboratoire
     'achat_levure'   => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6M10 3v5.5L6 16a2 2 0 001.8 2.8h8.4A2 2 0 0018 16l-4-7.5V3m-3 9h6"/>',
+
+    // Achats de stock : réutilisent les formes existantes (cube, flacon, pompe)
+    'achat_produit'  => '<path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>',
+    'achat_sel'      => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6l1 3H8L9 3zM7 6h10l1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L7 6zm2 4h6m-6 4h6"/>',
+    'achat_huile'    => '<path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6v3l2 3v9a2 2 0 01-2 2H9a2 2 0 01-2-2V9l2-3V3zm0 0h6M7 9h10m-7 4a2 2 0 100 4 2 2 0 000-4z"/>',
+    'achat_gasoil'   => '<path stroke-linecap="round" stroke-linejoin="round" d="M4 22V5a2 2 0 012-2h7a2 2 0 012 2v17M4 22h11M4 10h11M19 8l2-2v14h-2V8zm0 4h2"/>',
+    'achat_stock'    => '<path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>',
 
     // Gérant : silhouette personne seule
     'salaire_gerant' => '<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 0115 0"/>',

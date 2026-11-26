@@ -6,9 +6,6 @@
 
     <a href="{{ route('clients-abonnes.show', $facture->clientAbonne) }}" class="back-link">← {{ $facture->clientAbonne->prenom }} {{ $facture->clientAbonne->nom }}</a>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
 
     <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">

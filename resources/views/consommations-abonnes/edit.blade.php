@@ -41,6 +41,8 @@
                        max="{{ date('Y-m-d') }}" required>
             </div>
 
+            @include("consommations-abonnes._pain", ["painActuel" => $consommationAbonne->produit_id])
+
             <div class="form-group">
                 <label class="form-label">Quantité *</label>
                 <input class="form-input" type="number" name="quantite" min="1"

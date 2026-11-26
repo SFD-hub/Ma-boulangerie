@@ -12,17 +12,7 @@
 @endsection
 
 @section('content')
-    @if (session('success'))
-        <div style="background: #d4edda; border: 1px solid #28a745; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; color: #155724;">
-            {{ session('success') }}
-        </div>
-    @endif
 
-    @if (session('error'))
-        <div style="background: #fee; border: 1px solid #c33; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; color: #c33;">
-            {{ session('error') }}
-        </div>
-    @endif
 
     @if ($factures->isEmpty())
         <p style="color: #667085; text-align: center; padding: 40px;">

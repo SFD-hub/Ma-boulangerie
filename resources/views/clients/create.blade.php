@@ -4,7 +4,14 @@
 
 @section('content')
 
-    <a href="{{ route('clients.index') }}" class="back-link">← Clients</a>
+    @php
+        $typeUrl = in_array(request('type'), ['livreur', 'client', 'vendeur'], true) ? request('type') : 'livreur';
+        $choix   = old('type_choice', old('type', old('adresse') !== null ? 'abonne' : $typeUrl));
+        // Ajout d'un vendeur depuis la Boutique : le type est fixé, aucun choix à faire.
+        $modeVendeur = $typeUrl === 'vendeur' || $choix === 'vendeur';
+    @endphp
+
+    <a href="{{ $modeVendeur ? route('depot.index') : route('clients.index') }}" class="back-link">← {{ $modeVendeur ? 'Boutique' : 'Clients' }}</a>
 
     @if($errors->any())
         <div class="alert-danger">
@@ -13,28 +20,34 @@
     @endif
 
     <div class="card">
-        <div class="card-title">Ajouter</div>
+        <div class="card-title">{{ $modeVendeur ? 'Ajouter un vendeur' : 'Ajouter' }}</div>
 
+        @if($modeVendeur)
+            <div style="display:none">
+                <input type="radio" name="type_choice" value="vendeur" checked>
+            </div>
+        @else
         <div class="form-group">
             <label class="form-label">Type *</label>
             <div style="display:flex;gap:20px;padding-top:4px;flex-wrap:wrap">
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
                     <input type="radio" name="type_choice" value="livreur" onchange="updateAddForm()"
-                           {{ old('type_choice', old('type', old('adresse') !== null ? 'abonne' : 'livreur')) === 'livreur' ? 'checked' : '' }}>
+                           {{ $choix === 'livreur' ? 'checked' : '' }}>
                     <span>Livreur</span>
                 </label>
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
                     <input type="radio" name="type_choice" value="client" onchange="updateAddForm()"
-                           {{ old('type_choice', old('type', old('adresse') !== null ? 'abonne' : 'livreur')) === 'client' ? 'checked' : '' }}>
+                           {{ $choix === 'client' ? 'checked' : '' }}>
                     <span>Client</span>
                 </label>
                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
                     <input type="radio" name="type_choice" value="abonne" onchange="updateAddForm()"
-                           {{ old('type_choice', old('type', old('adresse') !== null ? 'abonne' : 'livreur')) === 'abonne' ? 'checked' : '' }}>
+                           {{ $choix === 'abonne' ? 'checked' : '' }}>
                     <span>Abonné</span>
                 </label>
             </div>
         </div>
+        @endif
 
         <form id="addForm" method="POST" action="{{ route('livreurs.store') }}">
             @csrf

@@ -46,6 +46,8 @@
         >
     </div>
 
+    @include("consommations-abonnes._pain", ["painActuel" => isset($consommationAbonne) ? $consommationAbonne->produit_id : null])
+
     <div>
         <label for="quantite" style="display: block; margin-bottom: 8px; font-weight: 700; color: #172033;">
             Quantité *

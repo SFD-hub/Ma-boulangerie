@@ -17,19 +17,7 @@
     </div>
 
     {{-- ── Messages flash ── --}}
-    @if(session('success'))
-        <div id="flash-ok"
-             style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:14px;color:#065F46;display:flex;align-items:center;gap:8px">
-            <span style="font-size:18px">✅</span> {{ session('success') }}
-        </div>
-        <script>setTimeout(function(){var el=document.getElementById('flash-ok');if(el){el.style.transition='opacity .5s';el.style.opacity='0';setTimeout(function(){el.remove()},500)}},3000)</script>
-    @endif
 
-    @if(session('warning'))
-        <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:14px;color:#92400E;display:flex;align-items:center;gap:8px">
-            <span style="font-size:18px">⚠️</span> {{ session('warning') }}
-        </div>
-    @endif
 
     {{-- ── Carte profil ── --}}
     <div style="background:#FFFFFF;border-radius:18px;padding:28px 20px 24px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:20px">

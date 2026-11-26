@@ -46,8 +46,59 @@ class Livreur extends Model
 
     // "Livreur" et "Client" partagent la même mécanique — ce libellé ne sert
     // qu'à l'affichage (badges, écrans d'attribution/règlement).
+    // Étiquette des listes et badges : un vendeur de la Boutique s'affiche « Boutique ».
     public function typeLabel(): string
     {
-        return $this->type === 'client' ? 'Client' : 'Livreur';
+        return match ($this->type) {
+            'client'  => 'Client',
+            'vendeur' => 'Boutique',
+            default   => 'Livreur',
+        };
+    }
+
+    // Nom de la personne dans les écrans et messages : « Vendeur » pour la Boutique.
+    public function nomRole(): string
+    {
+        return match ($this->type) {
+            'client'  => 'Client',
+            'vendeur' => 'Vendeur',
+            default   => 'Livreur',
+        };
+    }
+
+    // Distribution « en cours » d'un vendeur : la plus récente qui n'a pas
+    // encore reçu de versement. C'est sur elle que se comptent ses ventes.
+    public function distributionEnCours(): ?Distribution
+    {
+        return $this->distributions()
+            ->doesntHave('versement')
+            ->orderByDesc('date_distribution')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    // Distribution d'AUJOURD'HUI pas encore réglée : c'est la seule sur laquelle on
+    // peut saisir un retour (le pain rapporté le jour même retourne au stock du jour).
+    public function distributionDuJour(): ?Distribution
+    {
+        return $this->distributions()
+            ->whereDate('date_distribution', now()->toDateString())
+            ->doesntHave('versement')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    // Vendeur de la Boutique (même mécanique, affiché dans la page Boutique).
+    public function estVendeur(): bool
+    {
+        return $this->type === 'vendeur';
+    }
+
+    // Où revenir depuis la fiche : la Boutique pour un vendeur, sinon la liste Clients.
+    public function urlRetour(): string
+    {
+        return $this->estVendeur()
+            ? route('depot.index')
+            : route('clients.index', ['type' => $this->type]);
     }
 }

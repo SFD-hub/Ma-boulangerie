@@ -34,17 +34,14 @@
         </span>
     </div>
 
-    @php
-        $distributions = $livreur->distributions->sortByDesc(
-            fn ($d) => $d->date_distribution->format('Y-m-d') . ' ' . $d->created_at->format('H:i:s')
-        );
-    @endphp
+    {{-- ── Période ── --}}
+    @include('partials.periode', ['action' => route('livreurs.distributions', $livreur)])
 
     @if($distributions->isEmpty())
 
         <div style="text-align:center;padding:60px 0;color:#9CA3AF;font-size:14px">
             <div style="font-size:40px;margin-bottom:12px">📦</div>
-            Aucune distribution enregistrée.
+            Aucune distribution sur cette période.
         </div>
 
     @else
@@ -79,15 +76,18 @@
                             </span>
                         </div>
 
-                        {{-- Pains attribués / vendus / invendus --}}
+                        {{-- Pains attribués / retour / vendus / restants --}}
                         <div style="font-size:13px;color:#6B7280;margin-bottom:3px">
-                            <span>{{ $dist->pains_attribues }}&nbsp;attribués</span>
+                            <span>{{ $dist->pains_donnes }}&nbsp;attribués</span>
+                            @if((int) $dist->retours_parts > 0)
+                                · <span style="color:#3B82F6">retour : {{ $dist->retours_texte }}</span>
+                            @endif
                             @if($dist->prix_pain)
                                 · <span style="color:#6B7280">{{ number_format($dist->prix_pain, 0, ',', ' ') }}&nbsp;FCFA/pain</span>
                             @endif
                             @if($aVersement)
                                 · <span style="color:#10B981">vendus : {{ \App\Support\Nombre::pains($dist->pains_vendus) }}</span>
-                                · <span style="color:#F97316">invendus : {{ \App\Support\Nombre::pains($dist->invendus) }}</span>
+                                · <span style="color:#F97316">restants : {{ \App\Support\Nombre::pains($dist->invendus) }}</span>
                             @elseif(!$estReglee)
                                 · <span style="font-style:italic;color:#9CA3AF">ventes en attente</span>
                             @endif
@@ -150,6 +150,8 @@
             @endforeach
 
         </div>
+
+        @include('partials.pagination', ['paginator' => $distributions])
 
     @endif
 

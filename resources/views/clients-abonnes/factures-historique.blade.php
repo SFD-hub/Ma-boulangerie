@@ -21,11 +21,6 @@
         {{ $clientAbonne->prenom }} {{ $clientAbonne->nom }}
     </div>
 
-    @if(session('error'))
-        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#EF4444">
-            {{ session('error') }}
-        </div>
-    @endif
 
     @if($errors->any())
         <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:14px 16px;margin-bottom:16px">
@@ -35,11 +30,14 @@
         </div>
     @endif
 
+    {{-- ── Période ── --}}
+    @include('partials.periode', ['action' => route('clients-abonnes.factures.historique', $clientAbonne)])
+
     @if($factures->isEmpty())
 
         <div style="text-align:center;padding:60px 0;color:#9CA3AF;font-size:14px">
             <div style="font-size:40px;margin-bottom:12px">📄</div>
-            Aucune facture générée.
+            Aucune facture sur cette période.
         </div>
 
     @else
@@ -197,10 +195,12 @@
 
         </div>
 
+        @include('partials.pagination', ['paginator' => $factures])
+
         {{-- ── Total ── --}}
         <div style="background:#F97316;border-radius:14px;padding:16px 20px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
             <span style="font-size:15px;font-weight:600;color:#FFFFFF">Total facturé</span>
-            <span style="font-size:16px;font-weight:800;color:#FFFFFF">{{ number_format($factures->sum('montant_total'), 0, ',', ' ') }}&nbsp;FCFA</span>
+            <span style="font-size:16px;font-weight:800;color:#FFFFFF">{{ number_format($totalFacture, 0, ',', ' ') }}&nbsp;FCFA</span>
         </div>
 
     @endif

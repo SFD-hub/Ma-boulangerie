@@ -23,11 +23,14 @@
         </a>
     </div>
 
+    {{-- ── Période ── --}}
+    @include('partials.periode', ['action' => route('depenses.historique')])
+
     @if($depenses->isEmpty())
 
         <div style="text-align:center;padding:60px 0;color:#9CA3AF;font-size:14px">
             <div style="font-size:40px;margin-bottom:12px">💸</div>
-            Aucune dépense enregistrée.
+            Aucune dépense sur cette période.
         </div>
 
     @else
@@ -37,7 +40,7 @@
 
             @foreach($depenses as $depense)
                 @php
-                    $isAuto  = in_array($depense->categorie, ['achat_farine', 'achat_levure']);
+                    $isAuto  = in_array($depense->categorie, \App\Http\Controllers\DepenseController::CATEGORIES_AUTO, true);
                     $libelle = $libelles[$depense->categorie] ?? $depense->categorie;
                 @endphp
                 <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}position:relative">
@@ -100,41 +103,16 @@
         </div>
 
         {{-- ── Pagination ── --}}
-        @if($depenses->hasPages())
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px">
-
-                @if($depenses->onFirstPage())
-                    <span style="font-size:14px;font-weight:600;color:#D1D5DB;padding:10px 16px;background:#F9FAFB;border-radius:10px">
-                        ← Précédent
-                    </span>
-                @else
-                    <a href="{{ $depenses->previousPageUrl() }}"
-                       style="font-size:14px;font-weight:600;color:#F97316;padding:10px 16px;background:#FFF7ED;border-radius:10px;text-decoration:none">
-                        ← Précédent
-                    </a>
-                @endif
-
-                <span style="font-size:13px;color:#9CA3AF;font-weight:500">
-                    Page {{ $depenses->currentPage() }} / {{ $depenses->lastPage() }}
-                </span>
-
-                @if($depenses->hasMorePages())
-                    <a href="{{ $depenses->nextPageUrl() }}"
-                       style="font-size:14px;font-weight:600;color:#F97316;padding:10px 16px;background:#FFF7ED;border-radius:10px;text-decoration:none">
-                        Suivant →
-                    </a>
-                @else
-                    <span style="font-size:14px;font-weight:600;color:#D1D5DB;padding:10px 16px;background:#F9FAFB;border-radius:10px">
-                        Suivant →
-                    </span>
-                @endif
-
-            </div>
-        @endif
+        @include('partials.pagination', ['paginator' => $depenses])
 
         {{-- ── Total dépenses ── --}}
         <div style="background:#F97316;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
-            <span style="font-size:15px;font-weight:600;color:#FFFFFF">Total dépenses</span>
+            <div>
+                <div style="font-size:15px;font-weight:600;color:#FFFFFF">Total dépenses</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">
+                    {{ $nombre }} dépense{{ $nombre > 1 ? 's' : '' }} · du {{ \Carbon\Carbon::parse($du)->format('d/m/Y') }} au {{ \Carbon\Carbon::parse($au)->format('d/m/Y') }}
+                </div>
+            </div>
             <span style="font-size:16px;font-weight:800;color:#FFFFFF">{{ number_format($totalGlobal, 0, ',', ' ') }}&nbsp;FCFA</span>
         </div>
 

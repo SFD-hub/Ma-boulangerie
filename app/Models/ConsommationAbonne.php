@@ -14,6 +14,7 @@ class ConsommationAbonne extends Model
 
     protected $fillable = [
         'client_abonne_id',
+        'produit_id',
         'date_consommation',
         'quantite',
     ];

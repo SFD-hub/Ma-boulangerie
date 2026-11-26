@@ -21,17 +21,7 @@
 @endsection
 
 @section('content')
-    @if (session('success'))
-        <div style="background: #d4edda; border: 1px solid #28a745; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; color: #155724;">
-            {{ session('success') }}
-        </div>
-    @endif
 
-    @if (session('error'))
-        <div style="background: #fee; border: 1px solid #c33; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; color: #c33;">
-            {{ session('error') }}
-        </div>
-    @endif
 
     {{-- Métriques clés --}}
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
@@ -49,7 +39,7 @@
         </div>
         <div style="padding: 16px; background: #fff; border: 1px solid #d9dee7; border-radius: 8px;">
             <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Pains attribués</p>
-            <p style="margin: 0; font-size: 20px; font-weight: 700; color: #172033;">{{ $distribution->pains_attribues }}</p>
+            <p style="margin: 0; font-size: 20px; font-weight: 700; color: #172033;">{{ $distribution->pains_donnes }}</p>
             <p style="margin: 4px 0 0; font-size: 11px; color: #667085;">{{ number_format($distribution->prix_pain, 0, ',', ' ') }} F / pain</p>
         </div>
         @if ($distribution->versement)
@@ -58,7 +48,7 @@
                 <p style="margin: 0; font-size: 20px; font-weight: 700; color: #155724;">{{ \App\Support\Nombre::pains($distribution->pains_vendus) }}</p>
             </div>
             <div style="padding: 16px; background: #fff; border: 1px solid #f59e0b; border-radius: 8px;">
-                <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Invendus (retournés)</p>
+                <p style="margin: 0 0 6px; color: #667085; font-size: 12px; text-transform: uppercase; font-weight: 700;">Restants</p>
                 <p style="margin: 0; font-size: 20px; font-weight: 700; color: #92400e;">{{ \App\Support\Nombre::pains($distribution->invendus) }}</p>
             </div>
         @endif

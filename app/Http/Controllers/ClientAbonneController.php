@@ -126,19 +126,58 @@ class ClientAbonneController extends Controller
         return view('clients-abonnes.facture-form', compact('clientAbonne', 'prixPain', 'consommationsData'));
     }
 
-    public function consoHistorique(ClientAbonne $clientAbonne): View
+    // Historique des consommations : sélecteur de période, 10 par page, total de la période.
+    public function consoHistorique(Request $request, ClientAbonne $clientAbonne): View
     {
         abort_if($clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
-        $consommations = $clientAbonne->consommations()->orderByDesc('date_consommation')->get();
-        $totalPains = $consommations->sum('quantite');
-        return view('clients-abonnes.conso-historique', compact('clientAbonne', 'consommations', 'totalPains'));
+
+        [$du, $au, $periodeLimitee] = \App\Support\Periode::depuis($request);
+
+        $requete = $clientAbonne->consommations()->whereBetween('date_consommation', [$du, $au]);
+
+        // Total et nombre portent sur toute la période, pas sur la page affichée.
+        $totalPains = (int) (clone $requete)->sum('quantite');
+        $nombre     = (clone $requete)->count();
+
+        $consommations = $requete
+            ->orderByDesc('date_consommation')
+            ->orderByDesc('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('clients-abonnes.conso-historique', compact('clientAbonne', 'consommations', 'totalPains', 'nombre', 'du', 'au', 'periodeLimitee'));
     }
 
-    public function facturesHistorique(ClientAbonne $clientAbonne): View
+    // Historique des factures : sélecteur de période (par défaut les 12 derniers mois, puisqu'il
+    // y a une facture par mois) et 10 par page.
+    public function facturesHistorique(Request $request, ClientAbonne $clientAbonne): View
     {
         abort_if($clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
-        $factures = $clientAbonne->factures()->with('paiementsFactures')->orderByDesc('annee')->orderByDesc('mois')->get();
-        return view('clients-abonnes.factures-historique', compact('clientAbonne', 'factures'));
+
+        if (! $request->query('du') && ! $request->query('au')) {
+            $request->query->set('du', now()->subYear()->addDay()->toDateString());
+            $request->query->set('au', now()->toDateString());
+        }
+        [$du, $au, $periodeLimitee] = \App\Support\Periode::depuis($request);
+
+        // Une facture couvre un mois : elle est dans la période si son mois chevauche du… au.
+        $requete = $clientAbonne->factures()
+            ->whereRaw("DATE(CONCAT(annee, '-', LPAD(mois, 2, '0'), '-01')) BETWEEN ? AND ?", [
+                \Carbon\Carbon::parse($du)->startOfMonth()->toDateString(),
+                $au,
+            ]);
+
+        // Total sur toute la période, pas seulement sur la page affichée.
+        $totalFacture = (float) (clone $requete)->sum('montant_total');
+
+        $factures = $requete
+            ->with('paiementsFactures')
+            ->orderByDesc('annee')
+            ->orderByDesc('mois')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('clients-abonnes.factures-historique', compact('clientAbonne', 'factures', 'totalFacture', 'du', 'au', 'periodeLimitee'));
     }
 
     // ─── Consommation depuis le détail client ──────────────────────────────
@@ -150,6 +189,7 @@ class ClientAbonneController extends Controller
         $validated = $request->validate([
             'date_consommation' => 'required|date|before_or_equal:today',
             'quantite'          => 'required|integer|min:1',
+            'produit_id' => ['nullable', \Illuminate\Validation\Rule::exists('produits', 'id')->where('boulangerie_id', auth()->user()->boulangerie_id)],
         ], [
             'date_consommation.required'     => 'La date est obligatoire.',
             'date_consommation.before_or_equal' => 'La date ne peut pas être dans le futur.',
@@ -157,8 +197,15 @@ class ClientAbonneController extends Controller
             'quantite.min'                   => 'La quantité doit être au moins 1.',
         ]);
 
+        $produitId = (int) ($validated['produit_id'] ?? \App\Models\Produit::painAbonnes()?->id);
+
+        if ($refus = \App\Models\Produit::refusConsommationAbonne($validated['date_consommation'], (int) $validated['quantite'], null, $produitId)) {
+            return redirect()->back()->withInput()->with('error', $refus);
+        }
+
         ConsommationAbonne::create([
             'client_abonne_id'  => $clientAbonne->id,
+            'produit_id'        => $produitId,
             'date_consommation' => $validated['date_consommation'],
             'quantite'          => $validated['quantite'],
         ]);

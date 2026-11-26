@@ -8,9 +8,6 @@
 
 @section('content')
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
 
     <div class="card">
         <form method="POST" action="{{ route('profil.update') }}">

@@ -21,11 +21,14 @@
         {{ $clientAbonne->prenom }} {{ $clientAbonne->nom }}
     </div>
 
+    {{-- ── Période ── --}}
+    @include('partials.periode', ['action' => route('clients-abonnes.consommations.historique', $clientAbonne)])
+
     @if($consommations->isEmpty())
 
         <div style="text-align:center;padding:60px 0;color:#9CA3AF;font-size:14px">
             <div style="font-size:40px;margin-bottom:12px">🍞</div>
-            Aucune consommation enregistrée.
+            Aucune consommation sur cette période.
         </div>
 
     @else
@@ -83,9 +86,16 @@
 
         </div>
 
+        @include('partials.pagination', ['paginator' => $consommations])
+
         {{-- ── Total ── --}}
         <div style="background:#F97316;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
-            <span style="font-size:15px;font-weight:600;color:#FFFFFF">Total pains consommés</span>
+            <div>
+                <div style="font-size:15px;font-weight:600;color:#FFFFFF">Total pains consommés</div>
+                <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px">
+                    {{ $nombre }} consommation{{ $nombre > 1 ? 's' : '' }} · du {{ \Carbon\Carbon::parse($du)->format('d/m/Y') }} au {{ \Carbon\Carbon::parse($au)->format('d/m/Y') }}
+                </div>
+            </div>
             <span style="font-size:16px;font-weight:800;color:#FFFFFF">{{ number_format($totalPains, 0, ',', ' ') }}</span>
         </div>
 

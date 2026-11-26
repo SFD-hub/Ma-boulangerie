@@ -38,6 +38,10 @@
                        value="{{ old('telephone', $livreur->telephone) }}" required>
             </div>
 
+            @if($livreur->estVendeur())
+                {{-- Un vendeur de la Boutique reste un vendeur : pas de choix de type. --}}
+                <input type="hidden" name="type" value="vendeur">
+            @else
             <div class="form-group">
                 <label class="form-label">Type *</label>
                 <div style="display:flex;gap:20px;padding-top:4px">
@@ -51,6 +55,7 @@
                     </label>
                 </div>
             </div>
+            @endif
 
             <button type="submit" class="btn btn-primary btn-full">Enregistrer</button>
         </form>

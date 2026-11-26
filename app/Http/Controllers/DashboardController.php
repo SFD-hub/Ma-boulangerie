@@ -15,6 +15,7 @@ use App\Models\Versement;
 use App\Support\CaisseDuJour;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -34,7 +35,7 @@ class DashboardController extends Controller
         // pain, d'où l'addition en float plutôt qu'en int).
         $painsDistribues = (float) Distribution::whereHas('livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
                 ->whereDate('date_distribution', $today)
-                ->sum('nombre_pains')
+                ->sum(DB::raw('(nombre_pains * 6 - retours_parts) / 6'))
             + (float) ConsommationAbonne::whereHas('clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id))
                 ->whereDate('date_consommation', $today)
                 ->sum('quantite')
@@ -42,28 +43,9 @@ class DashboardController extends Controller
                 ->whereDate('date_vente', $today)
                 ->sum('parts') / 6;
 
-        // Stock farine (en sacs)
-        $farine = MatierePremiere::where('boulangerie_id', $boulangerie_id)
-            ->where('nom', 'Farine')
-            ->first();
-        $farineStock = $farine ? $farine->stock_actuel : 0;
-        $farineSeuil = $farine ? $farine->seuil_alerte : 0;
-
-        // Stock levure (en paquets)
-        $levure = MatierePremiere::where('boulangerie_id', $boulangerie_id)
-            ->where('nom', 'Levure')
-            ->first();
-        $levureStock = $levure ? $levure->stock_actuel : 0;
-        $levureSeuil = $levure ? $levure->seuil_alerte : 0;
-
-        // Alertes stock
-        $alertes = collect();
-        if ($farine && $farine->stock_actuel <= $farine->seuil_alerte) {
-            $alertes->push(['nom' => 'Farine', 'stock' => $farineStock, 'seuil' => $farineSeuil, 'unite' => 'sacs']);
-        }
-        if ($levure && $levure->stock_actuel <= $levure->seuil_alerte) {
-            $alertes->push(['nom' => 'Levure', 'stock' => $levureStock, 'seuil' => $levureSeuil, 'unite' => 'paquets']);
-        }
+        // Alertes stock faible : tous les produits du stock (farine, levure,
+        // produit, sel, huile, gasoil) au seuil d'alerte ou en dessous.
+        $alertes = MatierePremiere::enAlerte($boulangerie_id);
 
         // Distribution du jour (6 dernières, livreurs+clients et abonnés confondus)
         $distributionsJour = $this->derniereDistribution($boulangerie_id, $today);
@@ -94,7 +76,7 @@ class DashboardController extends Controller
                 'nom'       => trim($d->livreur->prenom . ' ' . $d->livreur->nom),
                 'type'      => $d->livreur->type,
                 'typeLabel' => $d->livreur->typeLabel(),
-                'quantite'  => (int) $d->nombre_pains,
+                'quantite'  => $d->pains_attribues,
                 'route'     => route('livreurs.show', $d->livreur),
                 'at'        => $d->created_at,
             ]);
@@ -176,7 +158,7 @@ class DashboardController extends Controller
             $q->get()->map(fn ($a) => [
                 'icon'  => '📦',
                 'label' => 'Achat ' . $a->matierePremiere->nom,
-                'sub'   => $a->quantite . ' ' . ($a->matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets') . ' · ' . number_format($a->montant, 0, ',', ' ') . ' FCFA',
+                'sub'   => $a->quantite . ' ' . $a->matierePremiere->uniteLibelle($a->quantite) . ' · ' . number_format($a->montant, 0, ',', ' ') . ' FCFA',
                 'at'    => $a->created_at,
             ])->toArray()
         );
@@ -196,7 +178,7 @@ class DashboardController extends Controller
 
         // Dépenses manuelles (hors achats stock auto)
         $q = Depense::where('boulangerie_id', $boulangerie_id)
-            ->whereNotIn('categorie', ['achat_farine', 'achat_levure'])
+            ->whereNotIn('categorie', \App\Http\Controllers\DepenseController::CATEGORIES_AUTO)
             ->orderByDesc('created_at');
         if ($limit) $q->limit($limit);
         $events = array_merge($events,

@@ -30,7 +30,7 @@
                 ['label' => 'Pains produits',    'valeur' => $totalPainsProduits,   'couleur' => '#F97316'],
                 ['label' => 'Pains distribués',   'valeur' => $totalPainsDistribues, 'couleur' => '#3B82F6'],
                 ['label' => 'Pains vendus',       'valeur' => $totalPainsVendus,     'couleur' => '#10B981'],
-                ['label' => 'Invendus',           'valeur' => $totalInvendus,        'couleur' => '#EF4444'],
+                ['label' => 'Restants',           'valeur' => $totalInvendus,        'couleur' => '#EF4444'],
             ];
         @endphp
 
@@ -91,14 +91,13 @@
             </span>
         </div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:{{ $resultatMois > 0 ? '#F0FDF4' : ($resultatMois < 0 ? '#FEF2F2' : '#F9FAFB') }}">
-            <span style="font-size:14px;font-weight:700;color:{{ $resultatMois > 0 ? '#065F46' : ($resultatMois < 0 ? '#991B1B' : '#374151') }}">
-                {{ $resultatMois > 0 ? '🟢 Bénéfice' : ($resultatMois < 0 ? '🔴 Perte' : '⚪ Équilibre') }}
-            </span>
-            <span style="font-size:15px;font-weight:800;color:{{ $resultatMois > 0 ? '#059669' : ($resultatMois < 0 ? '#EF4444' : '#6B7280') }}">
-                {{ $resultatMois > 0 ? '+' : '' }}{{ number_format($resultatMois, 0, ',', ' ') }}&nbsp;FCFA
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#F9FAFB">
+            <span style="font-size:14px;font-weight:700;color:#374151">Bénéfice</span>
+            <span style="font-size:15px;font-weight:800;color:#111827">
+                {{ number_format($beneficeMois, 0, ',', ' ') }}&nbsp;FCFA
             </span>
         </div>
+
 
     </div>
 
@@ -276,19 +275,10 @@
                 'border'  => '#FCD34D',
             ];
         }
-        if ($farineFaible) {
+        foreach ($stocksFaibles as $mp) {
             $alertes[] = [
-                'icone'   => '🌾',
-                'message' => 'Stock farine faible : ' . \App\Support\Nombre::qte($farine->stock_actuel ?? 0) . ' sac' . (($farine->stock_actuel ?? 0) > 1 ? 's' : '') . ' restant' . (($farine->stock_actuel ?? 0) > 1 ? 's' : ''),
-                'couleur' => '#EF4444',
-                'bg'      => '#FEF2F2',
-                'border'  => '#FCA5A5',
-            ];
-        }
-        if ($levureFaible) {
-            $alertes[] = [
-                'icone'   => '🧪',
-                'message' => 'Stock levure faible : ' . \App\Support\Nombre::qte($levure->stock_actuel ?? 0) . ' paquet' . (($levure->stock_actuel ?? 0) > 1 ? 's' : '') . ' restant' . (($levure->stock_actuel ?? 0) > 1 ? 's' : ''),
+                'icone'   => $mp->icone(),
+                'message' => 'Stock ' . mb_strtolower($mp->nom) . ' faible : ' . \App\Support\Nombre::qte($mp->stock_actuel) . ' ' . $mp->uniteLibelle($mp->stock_actuel) . ' restant' . ((float) $mp->stock_actuel > 1 ? 's' : ''),
                 'couleur' => '#EF4444',
                 'bg'      => '#FEF2F2',
                 'border'  => '#FCA5A5',

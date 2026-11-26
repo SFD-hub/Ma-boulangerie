@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\ConsommationAbonne;
 use App\Models\ClientAbonne;
+use App\Models\Produit;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +42,7 @@ class ConsommationAbonneController extends Controller
             'client_abonne_id' => 'required|exists:clients_abonnes,id',
             'date_consommation' => 'required|date',
             'quantite' => 'required|integer|min:1',
+            'produit_id' => ['nullable', \Illuminate\Validation\Rule::exists('produits', 'id')->where('boulangerie_id', auth()->user()->boulangerie_id)],
         ], [
             'client_abonne_id.required' => 'Le client est obligatoire.',
             'client_abonne_id.exists' => 'Le client sélectionné n\'existe pas.',
@@ -60,8 +62,15 @@ class ConsommationAbonneController extends Controller
                 ->with('error', 'Client invalide.');
         }
 
+        $produitId = (int) ($validated['produit_id'] ?? Produit::painAbonnes()?->id);
+
+        if ($refus = Produit::refusConsommationAbonne($validated['date_consommation'], (int) $validated['quantite'], null, $produitId)) {
+            return redirect()->back()->withInput()->with('error', $refus);
+        }
+
         ConsommationAbonne::create([
             'client_abonne_id' => $validated['client_abonne_id'],
+            'produit_id' => $produitId,
             'date_consommation' => $validated['date_consommation'],
             'quantite' => $validated['quantite'],
         ]);
@@ -103,6 +112,7 @@ class ConsommationAbonneController extends Controller
             'client_abonne_id' => 'required|exists:clients_abonnes,id',
             'date_consommation' => 'required|date',
             'quantite' => 'required|integer|min:1',
+            'produit_id' => ['nullable', \Illuminate\Validation\Rule::exists('produits', 'id')->where('boulangerie_id', auth()->user()->boulangerie_id)],
         ], [
             'client_abonne_id.required' => 'Le client est obligatoire.',
             'client_abonne_id.exists' => 'Le client sélectionné n\'existe pas.',
@@ -123,7 +133,14 @@ class ConsommationAbonneController extends Controller
                 ->with('error', 'Client invalide.');
         }
 
+        $produitId = (int) ($validated['produit_id'] ?? $consommationAbonne->produit_id ?? Produit::painAbonnes()?->id);
+
+        if ($refus = Produit::refusConsommationAbonne($validated['date_consommation'], (int) $validated['quantite'], $consommationAbonne->id, $produitId)) {
+            return redirect()->back()->withInput()->with('error', $refus);
+        }
+
         $consommationAbonne->update([
+            'produit_id' => $produitId,
             'client_abonne_id' => $validated['client_abonne_id'],
             'date_consommation' => $validated['date_consommation'],
             'quantite' => $validated['quantite'],

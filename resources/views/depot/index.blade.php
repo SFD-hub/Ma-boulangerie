@@ -5,15 +5,22 @@
 @section('content')
 
     {{-- ── En-tête page ── --}}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
-        <a href="{{ route('dashboard') }}"
-           style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#111827;text-decoration:none">
-            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-            </svg>
-        </a>
+    <div style="display:flex;align-items:center;margin-bottom:22px">
+        <div style="flex:1">
+            <a href="{{ route('dashboard') }}"
+               style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#111827;text-decoration:none">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+        </div>
         <span style="font-size:17px;font-weight:700;color:#111827">Boutique</span>
-        <div style="width:36px"></div>
+        <div style="flex:1;display:flex;justify-content:flex-end">
+            <a href="{{ route('clients.create', ['type' => 'vendeur']) }}"
+               style="background:#F97316;color:#FFFFFF;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;text-decoration:none">
+                Ajouter
+            </a>
+        </div>
     </div>
 
     {{-- Choix de la date --}}
@@ -22,95 +29,6 @@
                onchange="window.location = '{{ route('depot.index') }}?date=' + this.value"
                style="padding:8px 12px;border-radius:10px;border:1px solid var(--border);font-size:13px;color:#111827;background:#FFFFFF">
     </div>
-
-    {{-- ── Formulaire d'ajout ── --}}
-    <div style="background:#FFFFFF;border-radius:18px;padding:18px 16px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:20px">
-        <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:14px">Enregistrer une vente</div>
-
-        @if($errors->any())
-            <div class="alert-danger">
-                @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('depot.store') }}">
-            @csrf
-            <input type="hidden" name="date_vente" value="{{ $date }}">
-
-            @if($produits->isEmpty())
-                <p style="font-size:13px;color:#EF4444;margin:0 0 12px">
-                    Aucun produit configuré. <a href="{{ route('produits.create') }}">Créez-en un</a> avant de continuer.
-                </p>
-            @elseif($produits->count() > 1)
-                <div class="form-group">
-                    <label class="form-label">Produit *</label>
-                    <select class="form-input" name="produit_id" required>
-                        @foreach($produits as $produit)
-                            <option value="{{ $produit->id }}" {{ old('produit_id', $defaultProduitId) == $produit->id ? 'selected' : '' }}>
-                                {{ $produit->nom }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-            @else
-                <input type="hidden" name="produit_id" value="{{ $produits->first()->id }}">
-            @endif
-
-            <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:4px">Pains vendus *</div>
-            @php
-                $lignes = [
-                    ['id' => 'Entiers', 'name' => 'nombre_entiers', 'label' => 'Entier', 'prix' => $prix['entier']],
-                    ['id' => 'Moities', 'name' => 'nombre_moities', 'label' => 'Moitié', 'prix' => $prix['moitie']],
-                    ['id' => 'Tiers',   'name' => 'nombre_tiers',   'label' => 'Tiers',  'prix' => $prix['tiers']],
-                ];
-            @endphp
-            @foreach($lignes as $l)
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F3F4F6">
-                    <div>
-                        <div style="font-size:15px;font-weight:600;color:#111827">{{ $l['label'] }}</div>
-                        <div style="font-size:12px;color:#6B7280">{{ number_format($l['prix'], 0, ',', ' ') }} FCFA</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:10px">
-                        <button type="button" onclick="changerPiece('piece{{ $l['id'] }}', -1)"
-                                style="width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:#fff;font-size:22px;font-weight:700;color:#111827;cursor:pointer">−</button>
-                        <input type="number" name="{{ $l['name'] }}" id="piece{{ $l['id'] }}" min="0" inputmode="numeric"
-                               data-prix="{{ $l['prix'] }}" value="{{ old($l['name'], 0) }}" oninput="calcPieces()"
-                               style="width:56px;text-align:center;font-size:18px;font-weight:700;border:none;background:transparent;color:#111827">
-                        <button type="button" onclick="changerPiece('piece{{ $l['id'] }}', 1)"
-                                style="width:40px;height:40px;border-radius:12px;border:none;background:#F97316;font-size:22px;font-weight:700;color:#fff;cursor:pointer">+</button>
-                    </div>
-                </div>
-            @endforeach
-
-            <div style="display:flex;justify-content:space-between;align-items:baseline;margin:16px 0">
-                <span style="font-size:14px;font-weight:600;color:#374151">Total</span>
-                <span style="font-size:22px;font-weight:800;color:#111827"><span id="totalMontant">0</span> FCFA</span>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-full" {{ $produits->isEmpty() ? 'disabled' : '' }}>
-                Enregistrer la vente
-            </button>
-        </form>
-    </div>
-
-    <script>
-        const ids = ['pieceEntiers', 'pieceMoities', 'pieceTiers'];
-
-        function valeur(id) {
-            return Math.max(0, parseInt(document.getElementById(id)?.value || 0) || 0);
-        }
-
-        function changerPiece(id, delta) {
-            document.getElementById(id).value = Math.max(0, valeur(id) + delta);
-            calcPieces();
-        }
-
-        function calcPieces() {
-            const total = ids.reduce((somme, id) => somme + valeur(id) * parseInt(document.getElementById(id).dataset.prix), 0);
-            document.getElementById('totalMontant').textContent = total.toLocaleString('fr-FR');
-        }
-        document.addEventListener('DOMContentLoaded', calcPieces);
-    </script>
 
     {{-- ── Totaux du jour ── --}}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
@@ -135,15 +53,47 @@
         </div>
     </div>
 
-    {{-- ── Liste des ventes du jour ── --}}
-    @if($ventes->isEmpty())
-        <div class="card">
-            <div class="empty-state">
-                <p style="font-size:32px;margin-bottom:8px">🏪</p>
-                <p>Aucune vente enregistrée le {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}.</p>
-            </div>
+    {{-- ── Vendeurs : un par carte, chacun avec ses pains et son reliquat ── --}}
+    <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:10px">Vendeurs</div>
+    @if($vendeurs->isEmpty())
+        <div style="background:#FFFFFF;border-radius:16px;padding:22px 16px;text-align:center;font-size:13px;color:#9CA3AF;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:22px">
+            Aucun vendeur. Touchez « Ajouter » pour en créer un.
         </div>
     @else
+        <div style="background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:22px">
+            @foreach($vendeurs as $v)
+                @php
+                    $pains = (float) ($painsDuJour[$v->id] ?? 0);
+                    $reste = (float) ($resteAEncaisser[$v->id] ?? 0);
+                @endphp
+                <a href="{{ route('livreurs.show', $v) }}"
+                   style="display:flex;align-items:center;gap:12px;padding:14px 16px;text-decoration:none;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}">
+                    <div class="avatar">{{ strtoupper(substr($v->prenom ?: $v->nom, 0, 1)) }}</div>
+                    <div style="flex:1;min-width:0">
+                        <div style="font-size:14px;font-weight:700;color:#111827">{{ trim($v->prenom . ' ' . $v->nom) }}</div>
+                        <div style="font-size:12px;color:#9CA3AF;margin-top:2px">
+                            {{ $pains > 0 ? \App\Support\Nombre::pains($pains) . ' reçu' . ($pains > 1 ? 's' : '') . ' ce jour' : 'Aucun pain ce jour' }}
+                        </div>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0">
+                        @if($reste > 0)
+                            <div style="font-size:14px;font-weight:800;color:#D97706">{{ number_format($reste, 0, ',', ' ') }}&nbsp;FCFA</div>
+                            <div style="font-size:12px;color:#9CA3AF;margin-top:2px">à encaisser</div>
+                        @else
+                            <div style="font-size:12px;font-weight:600;color:#059669">À jour</div>
+                        @endif
+                    </div>
+                    <svg width="16" height="16" fill="none" stroke="#9CA3AF" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- ── Anciennes ventes saisies au comptoir ce jour-là (déjà comptées dans les totaux) ── --}}
+    @if($ventes->isNotEmpty())
+        <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:10px">Ventes au comptoir</div>
         <div class="card">
             @foreach($ventes as $vente)
                 <div class="list-item">

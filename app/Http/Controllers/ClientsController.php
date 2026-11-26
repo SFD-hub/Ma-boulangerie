@@ -22,7 +22,10 @@ class ClientsController extends Controller
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
 
+        // Les vendeurs de la Boutique se gèrent depuis la page Boutique : ils
+        // n'apparaissent pas dans ce répertoire.
         $livreurs = Livreur::where('boulangerie_id', $boulangerie_id)
+            ->where('type', '!=', 'vendeur')
             ->get()
             ->map(fn (Livreur $l) => [
                 'id'        => $l->id,
@@ -85,7 +88,7 @@ class ClientsController extends Controller
         // regroupement/somme plutôt qu'une simple lecture.
         $quantiteParLivreur = Distribution::whereIn('livreur_id', $livreurs->pluck('id'))
             ->where('date_distribution', $date)
-            ->selectRaw('livreur_id, SUM(nombre_pains) as total')
+            ->selectRaw('livreur_id, SUM(nombre_pains * 6 - retours_parts) / 6 as total')
             ->groupBy('livreur_id')
             ->pluck('total', 'livreur_id');
 
@@ -108,7 +111,7 @@ class ClientsController extends Controller
                 'type'      => $l->type,
                 'typeLabel' => $l->typeLabel(),
                 'route'     => route('livreurs.show', $l),
-                'quantite'  => (int) $quantiteParLivreur[$l->id],
+                'quantite'  => (float) $quantiteParLivreur[$l->id],
             ])
             ->concat(
                 $abonnes->filter(fn (ClientAbonne $c) => $quantiteParAbonne->has($c->id))
@@ -138,7 +141,7 @@ class ClientsController extends Controller
         $totalProduit   = (int) Production::where('boulangerie_id', $boulangerie_id)
             ->where('date_production', $date)
             ->sum('nombre_pains_produits');
-        $totalDistribue = (int) $quantiteParLivreur->sum() + (int) $quantiteParAbonne->sum() + $totalDepot;
+        $totalDistribue = (float) $quantiteParLivreur->sum() + (int) $quantiteParAbonne->sum() + $totalDepot;
 
         return view('clients.distribution', [
             'date'           => $date,

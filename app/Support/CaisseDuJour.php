@@ -60,6 +60,18 @@ class CaisseDuJour
             'route'    => route('depot.index'),
         ];
 
+        // Ventes de pain restant (sacs) du jour.
+        $restant = \App\Models\VenteRestant::where('boulangerie_id', $boulangerie_id)
+            ->whereDate('date_vente', $date)
+            ->selectRaw('COALESCE(SUM(nombre_sacs), 0) as sacs, COALESCE(SUM(montant), 0) as montant')
+            ->first();
+
+        $restantJour = [
+            'sacs'    => (int) $restant->sacs,
+            'montant' => (float) $restant->montant,
+            'route'   => route('pain-restant.index'),
+        ];
+
         $depenses = Depense::where('boulangerie_id', $boulangerie_id)
             ->whereDate('date_depense', $date)
             ->get()
@@ -69,12 +81,13 @@ class CaisseDuJour
                 'montant'   => (float) $d->montant,
             ]);
 
-        $totalEncaisse = (float) $encaissements->sum('montant') + $depotJour['montant'];
+        $totalEncaisse = (float) $encaissements->sum('montant') + $depotJour['montant'] + $restantJour['montant'];
         $totalDepense  = (float) $depenses->sum('montant');
 
         return [
             'encaissements'  => $encaissements,
             'depotJour'      => $depotJour,
+            'restantJour'    => $restantJour,
             'depenses'       => $depenses,
             'totalEncaisse'  => $totalEncaisse,
             'totalDepense'   => $totalDepense,

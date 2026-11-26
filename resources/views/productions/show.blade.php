@@ -6,9 +6,6 @@
 
     <a href="{{ route('productions.index') }}" class="back-link">← Productions</a>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
 
     <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -28,6 +25,12 @@
             <span class="detail-row-label">Paquets de levure</span>
             <span class="detail-row-value">{{ \App\Support\Nombre::qte($production->quantite_levure) }} kg</span>
         </div>
+        @if((float) $production->quantite_produit > 0)
+            <div class="detail-row">
+                <span class="detail-row-label">Paquets de produit</span>
+                <span class="detail-row-value">{{ \App\Support\Nombre::qte($production->quantite_produit) }} paquet{{ $production->quantite_produit > 1 ? 's' : '' }}</span>
+            </div>
+        @endif
         <div class="detail-row">
             <span class="detail-row-label">Pains produits</span>
             <span class="detail-row-value" style="font-size:20px;font-weight:700;color:var(--brand)">

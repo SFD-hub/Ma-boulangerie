@@ -10,6 +10,7 @@ use App\Models\MatierePremiere;
 use App\Models\PaiementFacture;
 use App\Models\Production;
 use App\Models\Versement;
+use App\Support\BilanCalcul;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -29,7 +30,7 @@ class StatistiqueController extends Controller
 
         $totalPainsDistribues = (int) Distribution::whereHas(
             'livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
-        )->sum('nombre_pains');
+        )->sum(DB::raw('(nombre_pains * 6 - retours_parts) / 6'));
 
         // COALESCE : reprend la même logique de repli que l'accessor
         // Distribution::invendus() (précision par pièce si réglée avec le
@@ -47,22 +48,11 @@ class StatistiqueController extends Controller
             : 0;
 
         // ── 2. FINANCES DU MOIS (mois courant) ─────────────────────────────
-        $versementsMois = (float) Versement::whereHas(
-            'livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
-        )->whereBetween('date_versement', [$debutMois, $finMois])->sum('montant_verse');
+        // Même calcul que le bilan : argent encaissé, matières CONSOMMÉES, autres dépenses.
+        $recettesMois = BilanCalcul::recettes($boulangerie_id, $debutMois, $finMois)['totalRecettes'];
+        $depensesMois = BilanCalcul::depenses($boulangerie_id, $debutMois, $finMois)['totalDepenses'];
+        $beneficeMois = $recettesMois - $depensesMois;
 
-        $facturesMois = (float) PaiementFacture::whereHas(
-            'facture.clientAbonne', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
-        )->whereBetween('date_paiement', [$debutMois, $finMois])
-         ->sum('montant');
-
-        $recettesMois = $versementsMois + $facturesMois;
-
-        $depensesMois = (float) Depense::where('boulangerie_id', $boulangerie_id)
-            ->whereBetween('date_depense', [$debutMois, $finMois])
-            ->sum('montant');
-
-        $resultatMois = $recettesMois - $depensesMois;
 
         // ── 3. MEILLEUR LIVREUR DU MOIS ────────────────────────────────────
         $livreursMois = Livreur::where('boulangerie_id', $boulangerie_id)
@@ -119,20 +109,17 @@ class StatistiqueController extends Controller
             'livreur', fn ($q) => $q->where('boulangerie_id', $boulangerie_id)
         )->where('reliquat', '>', 0)->sum('reliquat');
 
-        $farine      = MatierePremiere::where('boulangerie_id', $boulangerie_id)->where('nom', 'Farine')->first();
-        $levure      = MatierePremiere::where('boulangerie_id', $boulangerie_id)->where('nom', 'Levure')->first();
-        $farineFaible = $farine && $farine->stock_actuel <= $farine->seuil_alerte;
-        $levureFaible = $levure && $levure->stock_actuel <= $levure->seuil_alerte;
+        $stocksFaibles = MatierePremiere::enAlerte($boulangerie_id);
 
         return view('statistiques.index', compact(
             'moisNomCourant',
             'totalPainsProduits', 'totalPainsDistribues', 'totalPainsVendus', 'totalInvendus', 'tauxVente',
-            'recettesMois', 'depensesMois', 'resultatMois',
+            'recettesMois', 'depensesMois', 'beneficeMois',
             'meilleursLivreur',
             'livreurASurveiller',
             'topAbonnes',
             'evolutionsMensuelles',
-            'distributionsEnAttente', 'totalReliquats', 'farine', 'levure', 'farineFaible', 'levureFaible'
+            'distributionsEnAttente', 'totalReliquats', 'stocksFaibles'
         ));
     }
 }

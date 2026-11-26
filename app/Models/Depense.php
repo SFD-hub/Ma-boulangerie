@@ -16,6 +16,7 @@ class Depense extends Model
         'boulangerie_id',
         'libelle',
         'categorie',
+        'achat_matiere_premiere_id',
         'montant',
         'date_depense',
     ];

@@ -49,6 +49,13 @@
             </span>
         </div>
 
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #E5E7EB">
+            <span style="font-size:14px;color:#6B7280">Ventes de pain restant</span>
+            <span style="font-size:14px;font-weight:700;color:#111827">
+                {{ number_format($ventesRestant, 0, ',', ' ') }}&nbsp;FCFA
+            </span>
+        </div>
+
         <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#F0FDF4">
             <span style="font-size:14px;font-weight:700;color:#065F46">Total recettes</span>
             <span style="font-size:15px;font-weight:800;color:#059669">
@@ -63,20 +70,6 @@
         Dépenses
     </div>
 
-    @php
-        $lignesDepenses = array_values(array_filter([
-            ['label' => 'Farine',                   'icone' => '🌾', 'montant' => $achatFarine],
-            ['label' => 'Levure',                   'icone' => '🧪', 'montant' => $achatLevure],
-            ['label' => 'Salaires gérant',           'icone' => '👤', 'montant' => $salaireGerant],
-            ['label' => 'Salaires employés',          'icone' => '👥', 'montant' => $salaireEmploye],
-            ['label' => 'Eau',                      'icone' => '💧', 'montant' => $eau],
-            ['label' => 'Électricité',              'icone' => '⚡', 'montant' => $electricite],
-            ['label' => 'Carburant',                'icone' => '⛽', 'montant' => $carburant],
-            ['label' => 'Transport',                'icone' => '🚗', 'montant' => $transport],
-            ['label' => 'Réparation / Maintenance', 'icone' => '🔧', 'montant' => $reparation],
-            ['label' => 'Autres',                   'icone' => '📌', 'montant' => $autres],
-        ], fn($l) => $l['montant'] > 0));
-    @endphp
 
     <div style="background:#FFFFFF;border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:20px">
 
@@ -107,39 +100,7 @@
 
     </div>
 
-    {{-- ── RÉSULTAT ── --}}
-    <div style="font-size:11px;font-weight:800;color:#6B7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;padding:0 4px">
-        Résultat du mois
-    </div>
-
-    @if($benefice > 0)
-        <div style="border-radius:18px;padding:24px 20px;text-align:center;background:#F0FDF4;border:1.5px solid #A7F3D0;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:24px">
-            <div style="font-size:13px;font-weight:700;color:#059669;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">
-                🟢 Bénéfice du mois
-            </div>
-            <div style="font-size:38px;font-weight:800;color:#065F46;line-height:1">
-                +{{ number_format($benefice, 0, ',', ' ') }}&nbsp;<span style="font-size:20px">FCFA</span>
-            </div>
-        </div>
-    @elseif($benefice < 0)
-        <div style="border-radius:18px;padding:24px 20px;text-align:center;background:#FEF2F2;border:1.5px solid #FCA5A5;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:24px">
-            <div style="font-size:13px;font-weight:700;color:#EF4444;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">
-                🔴 Perte du mois
-            </div>
-            <div style="font-size:38px;font-weight:800;color:#991B1B;line-height:1">
-                {{ number_format($benefice, 0, ',', ' ') }}&nbsp;<span style="font-size:20px">FCFA</span>
-            </div>
-        </div>
-    @else
-        <div style="border-radius:18px;padding:24px 20px;text-align:center;background:#F9FAFB;border:1.5px solid #E5E7EB;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:24px">
-            <div style="font-size:13px;font-weight:700;color:#6B7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">
-                ⚪ Équilibre
-            </div>
-            <div style="font-size:38px;font-weight:800;color:#374151;line-height:1">
-                0&nbsp;<span style="font-size:20px">FCFA</span>
-            </div>
-        </div>
-    @endif
+    @include('bilan._benefice', ['infoStock' => $infoStock, 'benefice' => $benefice])
 
     {{-- ── Actions ── --}}
     <div style="display:flex;flex-direction:column;gap:10px">

@@ -55,6 +55,7 @@ class ActivityLog extends Model
             'depense'      => ['label' => 'Dépense enregistrée',     'icon' => '💸', 'tab' => 'Dépenses'],
             'gerant'       => ['label' => 'Gérant ajouté',           'icon' => '👔', 'tab' => 'Gérants'],
             'production'   => ['label' => 'Production enregistrée',  'icon' => '🍞', 'tab' => null],
+            'stock'        => ['label' => 'Stock mis à jour',        'icon' => '📦', 'tab' => null],
             'consommation' => ['label' => 'Consommation enregistrée','icon' => '👤', 'tab' => null],
             'systeme'      => ['label' => 'Action système',          'icon' => '⚙️', 'tab' => null],
         ];

@@ -6,9 +6,6 @@
 
     <a href="{{ route('productions.index') }}" class="back-link">← Productions</a>
 
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
 
     <div class="card">
         <div class="card-title">Nouvelle production</div>

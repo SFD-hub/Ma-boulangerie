@@ -109,6 +109,10 @@
             <span class="label">Ventes Boutique</span>
             <span class="amount">{{ number_format($ventesDepot, 0, ',', ' ') }} FCFA</span>
         </div>
+        <div class="row">
+            <span class="label">Ventes de pain restant</span>
+            <span class="amount">{{ number_format($ventesRestant, 0, ',', ' ') }} FCFA</span>
+        </div>
         <div class="row total-rec">
             <span class="label">Total recettes</span>
             <span class="amount">{{ number_format($totalRecettes, 0, ',', ' ') }} FCFA</span>
@@ -116,27 +120,13 @@
     </div>
 
     {{-- Dépenses --}}
-    @php
-        $lignes = array_values(array_filter([
-            ['label' => 'Farine',                   'icone' => '🌾', 'montant' => $achatFarine],
-            ['label' => 'Levure',                   'icone' => '🧪', 'montant' => $achatLevure],
-            ['label' => 'Salaires gérant',           'icone' => '👤', 'montant' => $salaireGerant],
-            ['label' => 'Salaires employés',          'icone' => '👥', 'montant' => $salaireEmploye],
-            ['label' => 'Eau',                      'icone' => '💧', 'montant' => $eau],
-            ['label' => 'Électricité',              'icone' => '⚡', 'montant' => $electricite],
-            ['label' => 'Carburant',                'icone' => '⛽', 'montant' => $carburant],
-            ['label' => 'Transport',                'icone' => '🚗', 'montant' => $transport],
-            ['label' => 'Réparation / Maintenance', 'icone' => '🔧', 'montant' => $reparation],
-            ['label' => 'Autres',                   'icone' => '📌', 'montant' => $autres],
-        ], fn($l) => $l['montant'] > 0));
-    @endphp
 
     <div class="section-label depenses">Dépenses</div>
     <div class="card">
-        @if(empty($lignes))
+        @if(empty($lignesDepenses))
             <div class="row"><span class="label">Aucune dépense ce mois.</span></div>
         @else
-            @foreach($lignes as $ligne)
+            @foreach($lignesDepenses as $ligne)
                 <div class="row">
                     <span class="row-icon">
                         <span class="icone">{{ $ligne['icone'] }}</span>
@@ -152,22 +142,23 @@
         </div>
     </div>
 
-    {{-- Résultat --}}
-    <div class="section-label resultat">Résultat du mois</div>
-    @if($benefice > 0)
-        <div class="result-box benefice">
-            <div class="result-title">🟢 Bénéfice du mois</div>
-            <div class="result-amount">+{{ number_format($benefice, 0, ',', ' ') }} FCFA</div>
+    @if($infoStock)
+        <div class="card">
+            <div class="row">
+                <span class="label">Achats de stock du mois</span>
+                <span class="amount">{{ number_format($infoStock['achats'], 0, ',', ' ') }} FCFA</span>
+            </div>
+            <div class="row">
+                <span class="label">Variation du stock</span>
+                <span class="amount">{{ $infoStock['variation'] > 0 ? '+' : '' }}{{ number_format($infoStock['variation'], 0, ',', ' ') }} FCFA</span>
+            </div>
         </div>
-    @elseif($benefice < 0)
-        <div class="result-box perte">
-            <div class="result-title">🔴 Perte du mois</div>
-            <div class="result-amount">{{ number_format($benefice, 0, ',', ' ') }} FCFA</div>
-        </div>
-    @else
+    @endif
+
+    @if($benefice !== null)
         <div class="result-box equilibre">
-            <div class="result-title">⚪ Équilibre</div>
-            <div class="result-amount">0 FCFA</div>
+            <div class="result-title">Bénéfice</div>
+            <div class="result-amount">{{ number_format($benefice, 0, ',', ' ') }} FCFA</div>
         </div>
     @endif
 

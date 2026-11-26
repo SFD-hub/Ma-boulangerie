@@ -35,7 +35,7 @@ class LivreurController extends Controller
         $validated = $request->validate([
             'nom_complet' => 'required|string|max:255',
             'telephone'   => 'required|string|max:20',
-            'type'        => 'required|in:livreur,client',
+            'type'        => 'required|in:livreur,client,vendeur',
         ], [
             'nom_complet.required' => 'Le nom est obligatoire.',
             'telephone.required'   => 'Le téléphone est obligatoire.',
@@ -58,7 +58,7 @@ class LivreurController extends Controller
         ]);
 
         return redirect()->route('livreurs.show', $livreur)
-            ->with('success', ($validated['type'] === 'client' ? 'Client créé.' : 'Livreur créé.'));
+            ->with('success', $livreur->nomRole() . ' créé.');
     }
 
     /**
@@ -116,27 +116,28 @@ class LivreurController extends Controller
             'nom'       => 'required|string|max:255',
             'prenom'    => 'required|string|max:255',
             'telephone' => 'required|string|max:20',
-            'type'      => 'required|in:livreur,client',
+            // Un vendeur reste vendeur ; un livreur/client ne devient pas vendeur ici.
+            'type'      => 'required|in:' . ($livreur->estVendeur() ? 'vendeur' : 'livreur,client'),
         ]);
 
         $livreur->update($validated);
 
         return redirect()->route('livreurs.show', $livreur)
-            ->with('success', ($validated['type'] === 'client' ? 'Client mis à jour.' : 'Livreur mis à jour.'));
+            ->with('success', $livreur->nomRole() . ' mis à jour.');
     }
 
     public function destroy(Livreur $livreur): RedirectResponse
     {
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
         $livreur->update(['actif' => false]);
-        return redirect()->route('livreurs.index')->with('success', 'Livreur désactivé.');
+        return redirect($livreur->urlRetour())->with('success', $livreur->nomRole() . ' désactivé.');
     }
 
     public function reactiver(Livreur $livreur): RedirectResponse
     {
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
         $livreur->update(['actif' => true]);
-        return redirect()->route('livreurs.show', $livreur)->with('success', 'Livreur réactivé.');
+        return redirect()->route('livreurs.show', $livreur)->with('success', $livreur->nomRole() . ' réactivé.');
     }
 
     // ─── Pages dédiées (formulaires + historique) ──────────────────────────
@@ -181,15 +182,25 @@ class LivreurController extends Controller
         ));
     }
 
-    public function distributionsHistorique(Livreur $livreur): View
+    // Historique des distributions d'un livreur/client/vendeur : sélecteur de période et
+    // 10 par page. Le reliquat total en attente (en haut) porte sur TOUTES les distributions.
+    public function distributionsHistorique(Request $request, Livreur $livreur): View
     {
         abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
-        $livreur->load(['distributions.versement', 'distributions.produit']);
 
-        // Reliquat total en attente
-        $reliquatTotalEnAttente = (float) $livreur->distributions->sum('reliquat');
+        [$du, $au, $periodeLimitee] = \App\Support\Periode::depuis($request);
 
-        return view('livreurs.distributions', compact('livreur', 'reliquatTotalEnAttente'));
+        $reliquatTotalEnAttente = (float) $livreur->distributions()->sum('reliquat');
+
+        $distributions = $livreur->distributions()
+            ->whereBetween('date_distribution', [$du, $au])
+            ->with(['versement', 'produit'])
+            ->orderByDesc('date_distribution')
+            ->orderByDesc('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('livreurs.distributions', compact('livreur', 'distributions', 'reliquatTotalEnAttente', 'du', 'au', 'periodeLimitee'));
     }
 
     // ─── Attribution de pains ───────────────────────────────────────────────
@@ -217,14 +228,14 @@ class LivreurController extends Controller
         // On attribue toujours des pains entiers — si le Dépôt a déjà vendu
         // une fraction du stock, on arrondit à l'entier inférieur (on ne peut
         // pas donner 0,33 pain à un livreur).
-        $disponible = $produit->painsEntiersDisponibles();
+        // Le stock est celui de la production du jour de la distribution : pas de
+        // production ce jour-là, ou plus rien de disponible = pas de distribution.
+        $date = \Carbon\Carbon::parse($validated['date_distribution'])->toDateString();
+
+        $disponible = $produit->painsEntiersDisponibles(null, $date);
 
         if ($validated['nombre_pains'] > $disponible) {
-            $reste = max(0, $disponible);
-            return redirect()->back()->withInput()->with('error',
-                'Il ne reste que ' . $reste . ' pain' . ($reste > 1 ? 's' : '')
-                . ' disponible' . ($reste > 1 ? 's' : '') . ' pour « ' . $produit->nom . ' ».'
-            );
+            return redirect()->back()->withInput()->with('error', $produit->messageStockInsuffisant($date));
         }
 
         $montantAttendu = $validated['nombre_pains'] * $validated['prix_pain'];
@@ -294,9 +305,25 @@ class LivreurController extends Controller
                 return ['ok' => false, 'message' => 'Cette distribution est déjà réglée (reliquat nul).'];
             }
 
-            $painsAttribues = $distribution->pains_attribues;
-            if ($invendusParts > $painsAttribues * 6) {
-                return ['ok' => false, 'message' => 'Les invendus (' . Nombre::pains($invendusParts / 6) . ') ne peuvent pas dépasser les pains attribués (' . $painsAttribues . ').'];
+            // Boutique : un vendeur rend son pain dans la journée. Ce qu'il n'a pas vendu
+            // n'est donc pas un « restant » mais un RETOUR : il retourne au stock du jour
+            // (et devient du pain restant s'il n'est pas redistribué). Les champs saisis
+            // sont alors enregistrés comme retour, et le montant porte sur ce qui reste.
+            if ($livreur->estVendeur() && ! $distribution->versement()->exists() && $invendusParts > 0) {
+                if ($invendusParts > $distribution->partsEnMain()) {
+                    return ['ok' => false, 'message' => 'Il ne lui reste que ' . Nombre::pains($distribution->partsEnMain() / 6) . ' en main (après ses ventes saisies).'];
+                }
+
+                $distribution->ajouterRetour($livreur, $entiersInvendus, $moitiesInvendus, $tiersInvendus);
+                $distribution->refresh();
+
+                $entiersInvendus = $moitiesInvendus = $tiersInvendus = $invendusParts = 0;
+            }
+
+            // Sixièmes de pain confiés : donnés − retours.
+            $partsConfiees = $distribution->parts_confiees;
+            if ($invendusParts > $partsConfiees) {
+                return ['ok' => false, 'message' => 'Les restants (' . Nombre::pains($invendusParts / 6) . ') ne peuvent pas dépasser les pains confiés (' . Nombre::pains($partsConfiees / 6) . ').'];
             }
 
             $estPremierVersement = !$distribution->versement()->exists();
@@ -306,7 +333,7 @@ class LivreurController extends Controller
                 // ── 1a. Premier versement : calculs complets ─────────────────
                 // Montant en FCFA entiers, calculé sur des entiers (sixièmes)
                 // puis arrondi une seule fois au franc le plus proche.
-                $montantAttendu = round(($painsAttribues * 6 - $invendusParts) * $prixPain / 6);
+                $montantAttendu = round(($partsConfiees - $invendusParts) * $prixPain / 6);
                 $reliquatJour   = max(0.0, $montantAttendu - $montantVerse);
                 $surplus        = max(0.0, $montantVerse - $montantAttendu);
 

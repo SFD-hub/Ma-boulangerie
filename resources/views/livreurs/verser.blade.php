@@ -53,11 +53,6 @@
             </div>
         @endif
 
-        @if(session('error'))
-            <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#EF4444">
-                {{ session('error') }}
-            </div>
-        @endif
 
         <div style="background:#FFFFFF;border-radius:18px;padding:20px 16px;box-shadow:0 1px 3px rgba(0,0,0,.07)">
 
@@ -66,7 +61,7 @@
 
                 {{-- Livreur (affichage) --}}
                 <div style="margin-bottom:18px">
-                    <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">{{ $livreur->typeLabel() }}</label>
+                    <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">{{ $livreur->nomRole() }}</label>
                     <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:12px;padding:13px 16px;font-size:15px;font-weight:600;color:#111827;display:flex;align-items:center;gap:10px">
                         <div style="width:32px;height:32px;border-radius:8px;background:#F97316;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">
                             {{ strtoupper(substr($livreur->prenom, 0, 1)) }}
@@ -91,19 +86,20 @@
                             Distribution concernée
                         </label>
                         <div id="distOption_{{ $distributionPreselectionnee->id }}"
-                             data-pains="{{ $distributionPreselectionnee->pains_attribues }}"
+                             data-parts="{{ $distributionPreselectionnee->parts_confiees }}"
                              data-prix="{{ $distributionPreselectionnee->prix_pain ?? $prixPain }}"
                              data-has-versement="{{ $dpAVersement ? 1 : 0 }}"
                              data-reliquat-actuel="{{ $dpReliquat }}"
                              data-entiers-existants="{{ $dpEntiersExist }}"
                              data-moities-existants="{{ $dpMoitiesExist }}"
                              data-tiers-existants="{{ $dpTiersExist }}"
-                             data-label="{{ $distributionPreselectionnee->produit->nom ?? '—' }} — {{ $distributionPreselectionnee->date_distribution->format('d/m/Y') }} — {{ $distributionPreselectionnee->pains_attribues }} pains"
+                             data-suggere="{{ $dpAVersement ? "" : implode(",", $distributionPreselectionnee->invendusSuggeres() ?? []) }}"
+                             data-label="{{ $distributionPreselectionnee->produit->nom ?? '—' }} — {{ $distributionPreselectionnee->date_distribution->format('d/m/Y') }} — {{ $distributionPreselectionnee->pains_confies_texte }}"
                              style="display:flex;align-items:center;justify-content:space-between;background:#FFF7ED;border:1px solid #F97316;border-radius:12px;padding:14px 16px;box-sizing:border-box">
                             <div style="flex:1;min-width:0">
                                 <div style="font-size:15px;font-weight:700;color:#111827">{{ $distributionPreselectionnee->produit->nom ?? '—' }} · {{ $distributionPreselectionnee->date_distribution->format('d/m/Y') }}</div>
                                 <div style="font-size:12px;color:#6B7280;margin-top:2px">
-                                    {{ $distributionPreselectionnee->pains_attribues }}&nbsp;pains
+                                    {{ $distributionPreselectionnee->pains_confies_texte }}
                                     @if($dpAVersement)
                                         &nbsp;·&nbsp;Reliquat&nbsp;:&nbsp;<strong style="color:#EF4444">{{ number_format($dpReliquat, 0, ',', ' ') }}&nbsp;FCFA</strong>
                                     @endif
@@ -144,20 +140,21 @@
                                 <div onclick="selectDist({{ $dist->id }})"
                                      id="distOption_{{ $dist->id }}"
                                      data-dist-option="{{ $dist->id }}"
-                                     data-pains="{{ $dist->pains_attribues }}"
+                                     data-parts="{{ $dist->parts_confiees }}"
                                      data-prix="{{ $dist->prix_pain ?? $prixPain }}"
                                      data-has-versement="{{ $aDejaVersement ? 1 : 0 }}"
                                      data-reliquat-actuel="{{ $reliquatActuel }}"
                                      data-entiers-existants="{{ $entiersExist }}"
                                      data-moities-existants="{{ $moitiesExist }}"
                                      data-tiers-existants="{{ $tiersExist }}"
-                                     data-label="{{ $dist->produit->nom ?? '—' }} — {{ $dist->date_distribution->format('d/m/Y') }} — {{ $dist->pains_attribues }} pains"
+                                     data-suggere="{{ $aDejaVersement ? "" : implode(",", $dist->invendusSuggeres() ?? []) }}"
+                                     data-label="{{ $dist->produit->nom ?? '—' }} — {{ $dist->date_distribution->format('d/m/Y') }} — {{ $dist->pains_confies_texte }}"
                                      style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;{{ !$loop->last ? 'border-bottom:1px solid #E5E7EB;' : '' }}"
                                      onmouseover="this.style.background='#FFF7ED'" onmouseout="this.style.background='#FFFFFF'">
                                     <div style="flex:1;min-width:0">
                                         <div style="font-size:14px;font-weight:700;color:#111827">{{ $dist->produit->nom ?? '—' }} · {{ $dist->date_distribution->format('d/m/Y') }}</div>
                                         <div style="font-size:12px;color:#6B7280;margin-top:2px">
-                                            {{ $dist->pains_attribues }}&nbsp;pains
+                                            {{ $dist->pains_confies_texte }}
                                             @if($aDejaVersement)
                                                 &nbsp;·&nbsp;Reliquat&nbsp;:&nbsp;<strong style="color:#EF4444">{{ number_format($reliquatActuel, 0, ',', ' ') }}&nbsp;FCFA</strong>
                                             @endif
@@ -181,7 +178,7 @@
                         <span id="rPains" style="font-weight:700;color:#111827">—</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
-                        <span style="color:#6B7280">Invendus retournés</span>
+                        <span style="color:#6B7280">{{ $livreur->estVendeur() ? "Non vendus rapportés" : "Restants" }}</span>
                         <span id="rInvendus" style="font-weight:700;color:#111827">0</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
@@ -207,14 +204,22 @@
                      Compter les morceaux (entiers/moitiés/tiers), jamais de virgule à taper. --}}
                 @php
                     $dpAVersementInit = ($distributionPreselectionnee ?? null) && $distributionPreselectionnee->versement !== null;
+                    // Vendeur de la Boutique : les invendus sont pré-remplis avec ce qu'il lui
+                    // reste en main d'après les ventes saisies (modifiables).
+                    $suggereInit = (! $dpAVersementInit && ($distributionPreselectionnee ?? null))
+                        ? $distributionPreselectionnee->invendusSuggeres()
+                        : null;
                     $entiersInvendusInit = $dpAVersementInit
                         ? ($distributionPreselectionnee->entiers_invendus ?? $distributionPreselectionnee->nombre_invendus ?? 0)
-                        : old('entiers_invendus', 0);
-                    $moitiesInvendusInit = $dpAVersementInit ? ($distributionPreselectionnee->moities_invendus ?? 0) : old('moities_invendus', 0);
-                    $tiersInvendusInit   = $dpAVersementInit ? ($distributionPreselectionnee->tiers_invendus ?? 0) : old('tiers_invendus', 0);
+                        : old('entiers_invendus', $suggereInit[0] ?? 0);
+                    $moitiesInvendusInit = $dpAVersementInit ? ($distributionPreselectionnee->moities_invendus ?? 0) : old('moities_invendus', $suggereInit[1] ?? 0);
+                    $tiersInvendusInit   = $dpAVersementInit ? ($distributionPreselectionnee->tiers_invendus ?? 0) : old('tiers_invendus', $suggereInit[2] ?? 0);
                 @endphp
                 <div id="invendusWrapper" style="margin-bottom:18px;{{ $dpAVersementInit ? 'display:none' : '' }}">
-                    <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">Invendus retournés *</label>
+                    <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">{{ $livreur->estVendeur() ? "Pains non vendus rapportés (retour)" : "Restants" }} *</label>
+                    <div id="invendusHint" style="{{ $suggereInit ? '' : 'display:none;' }}font-size:12px;color:#059669;margin-bottom:8px">
+                        Pré-rempli d'après les ventes saisies : vérifiez avec ce qu'il rapporte.
+                    </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
                         <div>
                             <label style="font-size:12px;color:#6B7280;display:block;margin-bottom:4px">Entiers</label>
@@ -317,6 +322,18 @@
                     if (invendusWrapper) invendusWrapper.style.display = 'none';
                 } else {
                     if (invendusWrapper) invendusWrapper.style.display = 'block';
+
+                    // Vendeur de la Boutique : proposer les invendus d'après ses ventes saisies.
+                    const suggere = (option.getAttribute('data-suggere') || '').split(',');
+                    const hint    = document.getElementById('invendusHint');
+                    if (suggere.length === 3) {
+                        invEntiersInput.value = suggere[0];
+                        invMoitiesInput.value = suggere[1];
+                        invTiersInput.value   = suggere[2];
+                        if (hint) hint.style.display = 'block';
+                    } else if (hint) {
+                        hint.style.display = 'none';
+                    }
                 }
             }
 
@@ -330,7 +347,7 @@
 
             if (!option) { if (res) res.style.display = 'none'; return; }
 
-            const pains          = parseInt(option.getAttribute('data-pains') || 0);
+            const partsConf     = parseInt(option.getAttribute('data-parts') || 0);
             const prix           = parseInt(option.getAttribute('data-prix')  || 0);
             const hasVersement   = option.getAttribute('data-has-versement') === '1';
             const reliquatActuel = parseFloat(option.getAttribute('data-reliquat-actuel') || 0);
@@ -350,7 +367,7 @@
             const reliquatLine = document.getElementById('reliquatLine');
             const surplusLine  = document.getElementById('surplusLine');
             const rAttenduEl   = document.getElementById('rAttendu');
-            const vendusParts  = Math.max(0, pains * 6 - invParts);
+            const vendusParts  = Math.max(0, partsConf - invParts);
             // Même présentation que Nombre::pains() côté serveur : "3 pains,
             // 1 moitié et 1 tiers", jamais de décimale.
             const fmtParts     = (p) => {
@@ -371,7 +388,7 @@
                 reliquat = Math.max(0, reliquatActuel - verse);
                 surplus  = Math.max(0, verse - reliquatActuel);
 
-                document.getElementById('rPains').textContent    = pains + ' pains';
+                document.getElementById('rPains').textContent    = fmtParts(partsConf);
                 document.getElementById('rInvendus').textContent = invendusTxt;
                 document.getElementById('rVendus').textContent   = vendusTxt;
                 if (rAttenduEl) {
@@ -384,7 +401,7 @@
                 reliquat = Math.max(0, attendu - verse);
                 surplus  = Math.max(0, verse - attendu);
 
-                document.getElementById('rPains').textContent    = pains + ' pains';
+                document.getElementById('rPains').textContent    = fmtParts(partsConf);
                 document.getElementById('rInvendus').textContent = invendusTxt;
                 document.getElementById('rVendus').textContent   = vendusTxt;
                 if (rAttenduEl) {

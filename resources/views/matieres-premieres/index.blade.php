@@ -5,132 +5,92 @@
 @section('content')
 
     @php
-        $farine = $matieresPremières->firstWhere('nom', 'Farine');
-        $levure = $matieresPremières->firstWhere('nom', 'Levure');
+        $manquants = collect(array_keys(\App\Models\MatierePremiere::CATALOGUE))
+            ->diff($matieresPremières->pluck('nom'));
 
-        // 4 derniers achats pour l'aperçu (la page historique affiche tout)
-        $boulangerie_id = auth()->user()->boulangerie_id;
-        $achats = \App\Models\AchatMatierePremiere::whereHas('matierePremiere', fn($q) => $q->where('boulangerie_id', $boulangerie_id))
-            ->with('matierePremiere')
-            ->orderByDesc('date_achat')
-            ->orderByDesc('id')
-            ->limit(4)
-            ->get();
+        // Le bouton « Stock initial » n'apparaît que s'il reste un produit sans stock ni historique.
+        $stockInitialPossible = $matieresPremières->contains(
+            fn ($m) => (float) $m->stock_actuel == 0.0 && $m->achats->isEmpty()
+        );
     @endphp
 
     {{-- ── En-tête page ── --}}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
-        <a href="{{ route('dashboard') }}"
-           style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#111827;text-decoration:none">
-            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-            </svg>
-        </a>
+    <div style="display:flex;align-items:center;margin-bottom:22px">
+        <div style="flex:1">
+            <a href="{{ route('dashboard') }}"
+               style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#111827;text-decoration:none">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+        </div>
         <span style="font-size:17px;font-weight:700;color:#111827">Stock</span>
-        <a href="{{ route('achats-matieres-premieres.create') }}"
-           style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#111827;text-decoration:none;font-size:24px;font-weight:300;line-height:1">
-            +
-        </a>
+        <div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:4px">
+            @if($stockInitialPossible)
+                <a href="{{ route('stock-initial.index') }}"
+                   style="background:#F97316;color:#FFFFFF;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:700;text-decoration:none">
+                    Stock initial
+                </a>
+            @endif
+
+            {{-- Menu ··· : actions rares (inventaire) --}}
+            <details style="position:relative;flex-shrink:0">
+                <summary style="list-style:none;cursor:pointer;color:#6B7280;padding:8px 8px;font-size:20px;font-weight:700;letter-spacing:2px;line-height:1;user-select:none">
+                    ···
+                </summary>
+                <div style="position:absolute;right:0;top:40px;background:#FFFFFF;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.14);z-index:50;min-width:160px;overflow:hidden;border:1px solid #F3F4F6">
+                    <a href="{{ route('inventaire.index') }}"
+                       style="display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:14px;font-weight:500;color:#111827;text-decoration:none">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        Inventaire
+                    </a>
+                </div>
+            </details>
+        </div>
     </div>
 
     {{-- ── Alerte configuration manquante ── --}}
-    @if(!$farine || !$levure)
+    @if($manquants->isNotEmpty())
         <div class="alert-strip" style="margin-bottom:16px">
-            ⚠️ Matières premières non configurées. Créez Farine et Levure dans les paramètres.
+            ⚠️ Produits de stock non configurés : {{ $manquants->implode(', ') }}.
         </div>
     @endif
 
-    {{-- ── Cartes stock ── --}}
-    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+    {{-- ── Cartes stock : chaque carte ouvre le détail du produit ── --}}
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:26px">
 
-        {{-- Farine --}}
-        <div style="background:#FFFFFF;border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,.07);border:1px solid #F3F4F6">
-            <div style="width:54px;height:54px;border-radius:14px;background:#FFF3E0;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">
-                🌾
-            </div>
-            <div style="flex:1;min-width:0">
-                <div style="font-size:15px;font-weight:700;color:#111827">Farine</div>
-                <div style="font-size:13px;color:#9CA3AF;margin-top:2px">Stock disponible</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-                @if($farine)
-                    <div style="font-size:30px;font-weight:800;line-height:1;color:{{ $farine->stock_actuel <= $farine->seuil_alerte && $farine->seuil_alerte > 0 ? '#EF4444' : '#111827' }}">
-                        {{ \App\Support\Nombre::qte($farine->stock_actuel) }}
+        @foreach($matieresPremières as $mp)
+            @php
+                $stock    = (float) $mp->stock_actuel;
+                $enAlerte = $stock <= (float) $mp->seuil_alerte && (float) $mp->seuil_alerte > 0;
+            @endphp
+            <a href="{{ route('matieres-premieres.show', $mp) }}"
+               style="display:block;text-decoration:none;color:inherit;background:#FFFFFF;border-radius:16px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.07);border:1px solid {{ $enAlerte ? '#FECACA' : '#F3F4F6' }}">
+                <div style="display:flex;align-items:center;gap:14px">
+                    <div style="width:54px;height:54px;border-radius:14px;background:{{ $mp->fond() }};display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">
+                        {{ $mp->icone() }}
                     </div>
-                    <div style="font-size:12px;color:#9CA3AF;margin-top:4px">sacs</div>
-                @else
-                    <div style="font-size:22px;font-weight:700;color:#D1D5DB">—</div>
-                @endif
-            </div>
-        </div>
-
-        {{-- Levure --}}
-        <div style="background:#FFFFFF;border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,.07);border:1px solid #F3F4F6">
-            <div style="width:54px;height:54px;border-radius:14px;background:#FFF0F0;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0">
-                🧪
-            </div>
-            <div style="flex:1;min-width:0">
-                <div style="font-size:15px;font-weight:700;color:#111827">Levure</div>
-                <div style="font-size:13px;color:#9CA3AF;margin-top:2px">Stock disponible</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-                @if($levure)
-                    <div style="font-size:30px;font-weight:800;line-height:1;color:{{ $levure->stock_actuel <= $levure->seuil_alerte && $levure->seuil_alerte > 0 ? '#EF4444' : '#111827' }}">
-                        {{ \App\Support\Nombre::qte($levure->stock_actuel) }}
-                    </div>
-                    <div style="font-size:12px;color:#9CA3AF;margin-top:4px">paquets</div>
-                @else
-                    <div style="font-size:22px;font-weight:700;color:#D1D5DB">—</div>
-                @endif
-            </div>
-        </div>
-
-    </div>
-
-    {{-- ── Bouton Ajouter achat ── --}}
-    <a href="{{ route('achats-matieres-premieres.create') }}"
-       style="display:flex;align-items:center;justify-content:center;gap:8px;background:#F97316;color:#FFFFFF;border-radius:14px;padding:16px 20px;font-size:16px;font-weight:700;text-decoration:none;margin-bottom:26px;width:100%;box-sizing:border-box">
-        + Ajouter achat
-    </a>
-
-    {{-- ── Historique des achats ── --}}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <span style="font-size:16px;font-weight:700;color:#111827">Historique des achats</span>
-        <a href="{{ route('achats-matieres-premieres.index') }}"
-           style="font-size:13px;font-weight:600;color:#F97316;text-decoration:none">
-            Voir plus
-        </a>
-    </div>
-
-    @if($achats->isEmpty())
-        <div style="text-align:center;padding:36px 0;color:#9CA3AF;font-size:14px">
-            Aucun achat enregistré.
-        </div>
-    @else
-        <div style="background:#FFFFFF;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07)">
-            @foreach($achats as $achat)
-                <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;{{ $loop->last ? '' : 'border-bottom:1px solid #E5E7EB;' }}">
-
-                    <div style="width:44px;height:44px;border-radius:12px;background:{{ $achat->matierePremiere->nom === 'Farine' ? '#FFF3E0' : '#FFF0F0' }};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">
-                        {{ $achat->matierePremiere->nom === 'Farine' ? '🌾' : '🧪' }}
-                    </div>
-
                     <div style="flex:1;min-width:0">
-                        <div style="font-size:14px;font-weight:700;color:#111827">
-                            {{ $achat->matierePremiere->nom }}
-                        </div>
-                        <div style="font-size:13px;color:#6B7280;margin-top:2px">
-                            {{ \App\Support\Nombre::qte($achat->quantite) }}&nbsp;{{ $achat->matierePremiere->nom === 'Farine' ? 'sacs' : 'paquets' }}
-                            &nbsp;–&nbsp;{{ number_format($achat->montant, 0, ',', ' ') }}&nbsp;FCFA
-                        </div>
-                        <div style="font-size:12px;color:#9CA3AF;margin-top:1px">
-                            {{ \Carbon\Carbon::parse($achat->date_achat)->format('d/m/Y') }}
+                        <div style="font-size:15px;font-weight:700;color:#111827">{{ $mp->nom }}</div>
+                        <div style="font-size:13px;color:{{ $enAlerte ? '#EF4444' : '#9CA3AF' }};margin-top:2px">
+                            {{ $enAlerte ? 'Stock faible' : 'Stock disponible' }}
                         </div>
                     </div>
-
+                    <div style="text-align:right;flex-shrink:0">
+                        <div style="font-size:30px;font-weight:800;line-height:1;color:{{ $enAlerte ? '#EF4444' : '#111827' }}">
+                            {{ \App\Support\Nombre::qte($stock) }}
+                        </div>
+                        <div style="font-size:12px;color:#9CA3AF;margin-top:4px">{{ $mp->uniteLibelle($stock) }}</div>
+                    </div>
+                    <svg width="18" height="18" fill="none" stroke="#D1D5DB" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                    </svg>
                 </div>
-            @endforeach
-        </div>
-    @endif
+            </a>
+        @endforeach
+
+    </div>
 
 @endsection
