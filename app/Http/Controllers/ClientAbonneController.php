@@ -98,6 +98,15 @@ class ClientAbonneController extends Controller
     {
         abort_if($clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
+        // Avec un historique (consommations, factures, paiements), on ne l'efface jamais : les paiements
+        // reçus sont des recettes du bilan. Il est simplement désactivé (réactivable depuis sa modification).
+        if ($clientAbonne->consommations()->exists() || Facture::where('client_abonne_id', $clientAbonne->id)->exists()) {
+            $clientAbonne->update(['actif' => false]);
+
+            return redirect()->route('clients-abonnes.index')
+                ->with('success', 'Abonné désactivé : son historique est conservé.');
+        }
+
         $clientAbonne->delete();
 
         return redirect()->route('clients-abonnes.index')

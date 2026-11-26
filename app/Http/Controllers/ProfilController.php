@@ -39,7 +39,7 @@ class ProfilController extends Controller
         $user->update([
             'name'      => $validated['name'],
             'telephone' => $validated['telephone'],
-            'password'  => $validated['password'] ? Hash::make($validated['password']) : $user->password,
+            'password'  => !empty($validated['password']) ? Hash::make($validated['password']) : $user->password,
         ]);
 
         // Regénère la session par précaution après un changement d'identifiants.

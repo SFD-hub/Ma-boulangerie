@@ -99,7 +99,7 @@ class GerantController extends Controller
         $gerant->update([
             'name'      => $validated['name'],
             'telephone' => $validated['telephone'],
-            'password'  => $validated['password'] ? bcrypt($validated['password']) : $gerant->password,
+            'password'  => !empty($validated['password']) ? bcrypt($validated['password']) : $gerant->password,
         ]);
 
         return redirect()->route('gerants.show', $gerant)
