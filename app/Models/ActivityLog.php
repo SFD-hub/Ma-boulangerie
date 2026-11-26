@@ -33,13 +33,21 @@ class ActivityLog extends Model
 
     public static function record(string $action, string $description, ?int $boulangerieId = null, ?string $categorie = null): void
     {
-        static::create([
-            'user_id'        => auth()->id(),
-            'action'         => $action,
-            'categorie'      => $categorie,
-            'description'    => $description,
-            'boulangerie_id' => $boulangerieId,
-        ]);
+        // Le journal ne doit JAMAIS faire échouer ni défaire l'action qu'il décrit : une panne
+        // d'écriture ici est signalée dans les logs du serveur, mais le versement, l'achat ou la
+        // production, eux, restent valides (sinon l'utilisateur voit une erreur, recommence, et
+        // l'opération est enregistrée deux fois).
+        try {
+            static::create([
+                'user_id'        => auth()->id(),
+                'action'         => $action,
+                'categorie'      => $categorie,
+                'description'    => $description,
+                'boulangerie_id' => $boulangerieId,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
