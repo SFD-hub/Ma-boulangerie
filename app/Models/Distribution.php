@@ -61,6 +61,12 @@ class Distribution extends Model
         return $this->hasOne(Versement::class);
     }
 
+    // Tous les versements de la distribution (le premier fixe les restants, les suivants règlent le reliquat).
+    public function versements(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Versement::class)->orderBy('id');
+    }
+
     public function ventesVendeur(): HasMany
     {
         return $this->hasMany(VenteVendeur::class);

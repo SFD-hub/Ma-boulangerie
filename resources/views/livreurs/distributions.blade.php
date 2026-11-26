@@ -131,6 +131,27 @@
                                 </svg>
                                 Modifier
                             </a>
+                            @foreach($dist->versements as $vers)
+                                <div style="height:1px;background:#F3F4F6"></div>
+                                <a href="{{ route('versements.modifier', $vers) }}"
+                                   style="display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:14px;font-weight:500;color:#111827;text-decoration:none">
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Modifier le versement{{ $dist->versements->count() > 1 ? ' du ' . $vers->date_versement->format('d/m') : '' }}
+                                </a>
+                                <form method="POST" action="{{ route('versements.destroy', $vers) }}"
+                                      onsubmit="return confirm('Annuler ce versement de {{ number_format((float) $vers->montant_verse, 0, ',', ' ') }} FCFA ? Le reliquat sera recalculé.')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit"
+                                            style="display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:14px;font-weight:500;color:#EF4444;background:none;border:none;cursor:pointer;width:100%;text-align:left">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                        Annuler le versement{{ $dist->versements->count() > 1 ? ' du ' . $vers->date_versement->format('d/m') : '' }}
+                                    </button>
+                                </form>
+                            @endforeach
                             <div style="height:1px;background:#F3F4F6"></div>
                             <form method="POST" action="{{ route('distributions.destroy', $dist) }}"
                                   onsubmit="return confirm('Supprimer cette distribution ?')">

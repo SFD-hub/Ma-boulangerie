@@ -169,6 +169,8 @@ Route::middleware(['auth', 'setup', 'role:proprietaire,gerant'])->group(function
     // Versements (accès direct conservé pour modification)
     // Les versements se saisissent depuis la fiche du livreur ; ici : consultation et suppression seulement.
     Route::resource('versements', VersementController::class)->only(['index', 'show', 'destroy']);
+    Route::get('/versements/{versement}/modifier', [VersementController::class, 'modifier'])->name('versements.modifier');
+    Route::put('/versements/{versement}', [VersementController::class, 'mettreAJour'])->name('versements.update');
 
     // Abonnés — pages dédiées (avant le resource pour éviter les conflits)
     Route::get('/clients-abonnes/{client_abonne}/ajouter-consommation', [ClientAbonneController::class, 'consoForm'])->name('clients-abonnes.consommation.form');

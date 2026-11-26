@@ -194,7 +194,7 @@ class LivreurController extends Controller
 
         $distributions = $livreur->distributions()
             ->whereBetween('date_distribution', [$du, $au])
-            ->with(['versement', 'produit'])
+            ->with(['versement', 'versements', 'produit'])
             ->orderByDesc('date_distribution')
             ->orderByDesc('id')
             ->paginate(10)
