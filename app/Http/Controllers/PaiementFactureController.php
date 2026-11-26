@@ -23,7 +23,7 @@ class PaiementFactureController extends Controller
 
         $validated = $request->validate([
             'montant'       => ['required', 'numeric', 'min:0.01', 'max:' . $solde],
-            'date_paiement' => 'required|date|before_or_equal:today',
+            'date_paiement' => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'montant.required'              => 'Le montant est obligatoire.',
             'montant.min'                   => 'Le montant doit être supérieur à 0.',

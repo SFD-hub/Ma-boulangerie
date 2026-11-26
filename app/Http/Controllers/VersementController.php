@@ -57,7 +57,7 @@ class VersementController extends Controller
 
         $validated = $request->validate([
             'montant_verse'    => 'required|numeric|min:0.01|max:999999999',
-            'date_versement'   => 'required|date|before_or_equal:today',
+            'date_versement'   => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
             'entiers_invendus' => 'nullable|integer|min:0|max:9999999',
             'moities_invendus' => 'nullable|integer|min:0|max:9999999',
             'tiers_invendus'   => 'nullable|integer|min:0|max:9999999',

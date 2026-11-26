@@ -54,7 +54,7 @@ class RetraitStockController extends Controller
         abort_unless($matierePremiere->retrait_manuel, 404);
 
         $validated = $request->validate([
-            'date_retrait' => 'nullable|date|before_or_equal:today',
+            'date_retrait' => 'nullable|date|after_or_equal:2020-01-01|before_or_equal:today',
             'note'         => 'nullable|string|max:255',
         ], [
             'date_retrait.date'            => 'La date n\'est pas valide.',

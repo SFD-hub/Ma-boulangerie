@@ -108,23 +108,7 @@ class DepenseController extends Controller
      */
     private function periode(Request $request): array
     {
-        $valide = fn (?string $d) => $d && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d) !== false;
-
-        $du = $valide($request->query('du')) ? $request->query('du') : Carbon::today()->startOfMonth()->toDateString();
-        $au = $valide($request->query('au')) ? $request->query('au') : Carbon::today()->toDateString();
-
-        if ($du > $au) {
-            [$du, $au] = [$au, $du];
-        }
-
-        $limitee = false;
-        $minimum = Carbon::parse($au)->subYear()->addDay()->toDateString();
-        if ($du < $minimum) {
-            $du = $minimum;
-            $limitee = true;
-        }
-
-        return [$du, $au, $limitee];
+        return \App\Support\Periode::depuis($request);
     }
 
     /**
@@ -234,7 +218,7 @@ class DepenseController extends Controller
             'libelle'     => 'required|string|min:3|max:255',
             'categorie'   => 'required|string|in:' . implode(',', array_keys(self::CATEGORIES_MANUELLES)),
             'montant'     => 'required|numeric|min:0.01',
-            'date_depense'=> 'required|date|before_or_equal:today',
+            'date_depense'=> 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'libelle.required'      => 'Le motif de la dépense est obligatoire.',
             'libelle.min'           => 'Le motif doit contenir au moins 3 caractères.',
@@ -299,7 +283,7 @@ class DepenseController extends Controller
             'libelle'      => 'required|string|min:3|max:255',
             'categorie'    => 'required|string|in:' . implode(',', array_keys($this->categoriesPour($depense))),
             'montant'      => 'required|numeric|min:0.01',
-            'date_depense' => 'required|date|before_or_equal:today',
+            'date_depense' => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'libelle.required'             => 'Le motif de la dépense est obligatoire.',
             'libelle.min'                  => 'Le motif doit contenir au moins 3 caractères.',

@@ -17,7 +17,8 @@ class Periode
      */
     public static function depuis(Request $request): array
     {
-        $valide = fn (?string $d) => $d && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d) !== false;
+        // Seulement une vraie date « AAAA-MM-JJ » (pas de tableau, pas de 30 février).
+        $valide = fn ($d) => is_string($d) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $d, $m) && checkdate((int) $m[2], (int) $m[3], (int) $m[1]) && (int) $m[1] >= 2000;
 
         $du = $valide($request->query('du')) ? $request->query('du') : Carbon::today()->startOfMonth()->toDateString();
         $au = $valide($request->query('au')) ? $request->query('au') : Carbon::today()->toDateString();

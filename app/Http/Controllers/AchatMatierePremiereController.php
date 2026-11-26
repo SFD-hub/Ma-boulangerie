@@ -41,23 +41,7 @@ class AchatMatierePremiereController extends Controller
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
 
-        $valide = fn (?string $d) => $d && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d) !== false;
-
-        $du = $valide($request->query('du')) ? $request->query('du') : Carbon::today()->startOfMonth()->toDateString();
-        $au = $valide($request->query('au')) ? $request->query('au') : Carbon::today()->toDateString();
-
-        // Dates inversées : on les remet dans l'ordre.
-        if ($du > $au) {
-            [$du, $au] = [$au, $du];
-        }
-
-        // Période limitée à 1 an (on garde la fin et on recule le début).
-        $periodeLimitee = false;
-        $limite = Carbon::parse($au)->subYear()->addDay()->toDateString();
-        if ($du < $limite) {
-            $du = $limite;
-            $periodeLimitee = true;
-        }
+        [$du, $au, $periodeLimitee] = \App\Support\Periode::depuis($request);
 
         $matieres = MatierePremiere::where('boulangerie_id', $boulangerie_id)->get()
             ->sortBy(fn (MatierePremiere $m) => $m->ordre())
@@ -105,7 +89,7 @@ class AchatMatierePremiereController extends Controller
             'matiere_premiere_id' => 'required|exists:matieres_premieres,id',
             'quantite'            => 'required|numeric|min:0.5|max:999999.99',
             'montant'             => 'required|numeric|min:0.01',
-            'date_achat'          => 'required|date|before_or_equal:today',
+            'date_achat'          => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'matiere_premiere_id.required' => 'La matière première est obligatoire.',
             'matiere_premiere_id.exists'   => 'La matière première sélectionnée n\'existe pas.',
@@ -200,7 +184,7 @@ class AchatMatierePremiereController extends Controller
             'matiere_premiere_id' => 'required|exists:matieres_premieres,id',
             'quantite'            => 'required|numeric|min:0.5|max:999999.99',
             'montant'             => 'required|numeric|min:0.01',
-            'date_achat'          => 'required|date|before_or_equal:today',
+            'date_achat'          => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'matiere_premiere_id.required' => 'La matière première est obligatoire.',
             'quantite.required'            => 'La quantité est obligatoire.',

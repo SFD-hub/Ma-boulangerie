@@ -29,20 +29,7 @@ class PainRestantController extends Controller
      */
     private function periode(Request $request): array
     {
-        $valide = fn (?string $d) => $d && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) && strtotime($d) !== false;
-        $du = $valide($request->query('du')) ? $request->query('du') : Carbon::today()->startOfMonth()->toDateString();
-        $au = $valide($request->query('au')) ? $request->query('au') : Carbon::today()->toDateString();
-        if ($du > $au) {
-            [$du, $au] = [$au, $du];
-        }
-        $limitee = false;
-        $minimum = Carbon::parse($au)->subYear()->addDay()->toDateString();
-        if ($du < $minimum) {
-            $du = $minimum;
-            $limitee = true;
-        }
-
-        return [$du, $au, $limitee];
+        return \App\Support\Periode::depuis($request);
     }
 
     public function index(Request $request): View
@@ -96,7 +83,7 @@ class PainRestantController extends Controller
         $boulangerieId = auth()->user()->boulangerie_id;
 
         $validateur = Validator::make($request->all(), [
-            'date_vente'    => 'required|date|before_or_equal:today',
+            'date_vente'    => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
             'nombre_sacs'   => 'required|integer|min:1|max:99999',
             'montant'       => 'required|numeric|min:0|max:99999999',
             'pains_estimes' => 'nullable|integer|min:0|max:9999999',

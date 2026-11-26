@@ -53,7 +53,7 @@ class DistributionController extends Controller
 
         $validated = $request->validate([
             'produit_id'         => ['required', Rule::exists('produits', 'id')->where('boulangerie_id', $boulangerie_id)],
-            'date_distribution'  => 'required|date|before_or_equal:today',
+            'date_distribution'  => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
             'nombre_pains'       => 'required|integer|min:1',
             'prix_pain'          => 'required|integer|min:1',
         ], [

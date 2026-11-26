@@ -196,7 +196,7 @@ class ClientAbonneController extends Controller
         abort_if($clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $validated = $request->validate([
-            'date_consommation' => 'required|date|before_or_equal:today',
+            'date_consommation' => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
             'quantite'          => 'required|integer|min:1',
             'produit_id' => ['nullable', \Illuminate\Validation\Rule::exists('produits', 'id')->where('boulangerie_id', auth()->user()->boulangerie_id)],
         ], [

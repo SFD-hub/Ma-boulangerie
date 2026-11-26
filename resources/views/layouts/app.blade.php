@@ -1353,6 +1353,24 @@
                 try {
                     sessionStorage.setItem(cle, JSON.stringify({ url: url, y: window.scrollY, t: Date.now() }));
                 } catch (err) {}
+
+                // Double appui : une fois le formulaire parti, ses boutons sont grisés
+                // (réactivés si l'utilisateur revient sur la page avec « Retour »).
+                setTimeout(function() {
+                    if (e.defaultPrevented) return;
+                    form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function(b) {
+                        b.disabled = true;
+                        b.style.opacity = '.6';
+                    });
+                }, 0);
+            });
+
+            window.addEventListener('pageshow', function(e) {
+                if (!e.persisted) return;
+                document.querySelectorAll('button[type=submit][disabled], input[type=submit][disabled]').forEach(function(b) {
+                    b.disabled = false;
+                    b.style.opacity = '';
+                });
             });
         })();
 

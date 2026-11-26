@@ -77,7 +77,7 @@ class ProductionController extends Controller
 
         $validated = $request->validate([
             'produit_id' => ['required', Rule::exists('produits', 'id')->where('boulangerie_id', $boulangerie_id)],
-            'date_production' => 'required|date|before_or_equal:today',
+            'date_production' => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
             'nombre_sacs' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_paquets_levure' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_paquets_produit' => 'nullable|numeric|min:0|max:999999.99',
@@ -224,7 +224,7 @@ class ProductionController extends Controller
 
         $validated = $request->validate([
             'produit_id' => ['required', Rule::exists('produits', 'id')->where('boulangerie_id', $production->boulangerie_id)],
-            'date_production' => 'required|date|before_or_equal:today',
+            'date_production' => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
             'nombre_sacs' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_paquets_levure' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_paquets_produit' => 'nullable|numeric|min:0|max:999999.99',

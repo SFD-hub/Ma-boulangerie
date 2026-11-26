@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Middleware\EnsureBoulangerieSetup;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\EviteDoublons;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -25,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'  => EnsureUserHasRole::class,
             'setup' => EnsureBoulangerieSetup::class,
         ]);
-        $middleware->web(append: [SecurityHeaders::class]);
+        $middleware->web(append: [SecurityHeaders::class, EviteDoublons::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
