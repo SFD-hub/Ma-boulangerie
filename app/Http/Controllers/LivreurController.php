@@ -251,6 +251,8 @@ class LivreurController extends Controller
             'statut'            => 'en_attente',
         ]);
 
+        \App\Models\ActivityLog::record('attribution_pains', auth()->user()->name . ' a attribué ' . $validated['nombre_pains'] . ' pains à ' . trim($livreur->prenom . ' ' . $livreur->nom) . ' (' . $livreur->nomRole() . ')', auth()->user()->boulangerie_id, 'vente');
+
         return redirect()->route('livreurs.show', $livreur)
             ->with('success', 'Attribution de ' . $validated['nombre_pains'] . ' pains à ' . $validated['prix_pain'] . ' FCFA enregistrée.');
     }
@@ -379,6 +381,8 @@ class LivreurController extends Controller
                 ->withInput()
                 ->with('error', $resultat['message']);
         }
+
+        \App\Models\ActivityLog::record('versement_enregistre', auth()->user()->name . ' a enregistré un versement de ' . number_format((float) $validated['montant_verse'], 0, ',', ' ') . ' FCFA — ' . trim($livreur->prenom . ' ' . $livreur->nom), auth()->user()->boulangerie_id, 'paiement');
 
         return redirect()->route('livreurs.show', $livreur)
             ->with('success', 'Versement enregistré.');

@@ -271,6 +271,8 @@ class AchatMatierePremiereController extends Controller
             ? redirect()->route('matieres-premieres.show', $achatMatierePremiere->matiere_premiere_id)
             : redirect()->route('achats-matieres-premieres.index');
 
+        \App\Models\ActivityLog::record('achat_modifie', auth()->user()->name . ' a modifié un achat de ' . $matierePremiereRef->nom . ' — ' . $validated['quantite'] . ' pour ' . number_format((float) $validated['montant'], 0, ',', ' ') . ' FCFA', auth()->user()->boulangerie_id, 'achat');
+
         return $retour->with('success', 'Achat mis à jour.');
     }
 
@@ -313,6 +315,8 @@ class AchatMatierePremiereController extends Controller
         $retour = $request->boolean('depuis_produit')
             ? redirect()->route('matieres-premieres.show', $achatMatierePremiere->matiere_premiere_id)
             : redirect()->route('achats-matieres-premieres.index');
+
+        \App\Models\ActivityLog::record('achat_supprime', auth()->user()->name . ' a supprimé un achat de ' . $achatMatierePremiere->matierePremiere->nom . ' (' . number_format((float) $achatMatierePremiere->montant, 0, ',', ' ') . ' FCFA)', auth()->user()->boulangerie_id, 'achat');
 
         return $retour->with('success', 'Achat supprimé et stock ajusté.');
     }

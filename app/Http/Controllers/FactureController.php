@@ -64,6 +64,8 @@ class FactureController extends Controller
         $facture->update($validated);
         $facture->syncStatut();
 
+        \App\Models\ActivityLog::record('facture_modifiee', auth()->user()->name . ' a modifié la facture ' . $facture->periodeLabel() . ' — ' . $facture->clientAbonne->nom, auth()->user()->boulangerie_id, 'vente');
+
         return redirect()->route('clients-abonnes.factures.historique', $facture->clientAbonne)
             ->with('success', 'Facture mise à jour.');
     }
@@ -80,6 +82,8 @@ class FactureController extends Controller
         }
 
         $facture->delete();
+
+        \App\Models\ActivityLog::record('facture_supprimee', auth()->user()->name . ' a supprimé la facture ' . $facture->periodeLabel() . ' — ' . $clientAbonne->nom, auth()->user()->boulangerie_id, 'vente');
 
         return redirect()->route('clients-abonnes.factures.historique', $clientAbonne)
             ->with('success', 'Facture supprimée.');

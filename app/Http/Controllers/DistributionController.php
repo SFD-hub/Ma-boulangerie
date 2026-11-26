@@ -116,6 +116,8 @@ class DistributionController extends Controller
 
         $distribution->livreur->recalculerReliquats();
 
+        \App\Models\ActivityLog::record('distribution_modifiee', auth()->user()->name . ' a modifié une distribution — ' . trim($distribution->livreur->prenom . ' ' . $distribution->livreur->nom) . ' (' . $validated['nombre_pains'] . ' pains)', auth()->user()->boulangerie_id, 'vente');
+
         return redirect()->route('distributions.show', $distribution)
             ->with('success', 'Distribution mise à jour avec succès.');
     }
@@ -133,6 +135,8 @@ class DistributionController extends Controller
             // Un surplus versé pour cette distribution avait pu régler d'anciens reliquats : on recalcule.
             $livreur->recalculerReliquats();
         });
+
+        \App\Models\ActivityLog::record('distribution_supprimee', auth()->user()->name . ' a supprimé une distribution de ' . $distribution->nombre_pains . ' pains — ' . trim($livreur->prenom . ' ' . $livreur->nom), auth()->user()->boulangerie_id, 'vente');
 
         return redirect()->route('livreurs.distributions', $livreur)
             ->with('success', 'Distribution supprimée.');

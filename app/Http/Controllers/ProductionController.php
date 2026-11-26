@@ -344,6 +344,8 @@ class ProductionController extends Controller
             return redirect()->back()->with('error', $resultat['message']);
         }
 
+        \App\Models\ActivityLog::record('production_modifiee', auth()->user()->name . ' a modifié une production — ' . $validated['nombre_pains_produits'] . ' pains', auth()->user()->boulangerie_id, 'production');
+
         return redirect()->route('productions.index')
             ->with('success', 'Production mise à jour avec succès.');
     }
@@ -423,6 +425,8 @@ class ProductionController extends Controller
             }
             $production->delete();
         });
+
+        \App\Models\ActivityLog::record('production_supprimee', auth()->user()->name . ' a supprimé une production de ' . $production->nombre_pains_produits . ' pains', auth()->user()->boulangerie_id, 'production');
 
         return redirect()->route('productions.index')
             ->with('success', 'Production supprimée et stock restauré.');

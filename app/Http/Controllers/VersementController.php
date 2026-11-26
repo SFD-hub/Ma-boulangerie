@@ -110,6 +110,8 @@ class VersementController extends Controller
             return redirect()->back()->withInput()->with('error', $erreur);
         }
 
+        \App\Models\ActivityLog::record('versement_corrige', auth()->user()->name . ' a corrigé un versement de ' . trim($livreur->prenom . ' ' . $livreur->nom) . ' — maintenant ' . number_format((float) $validated['montant_verse'], 0, ',', ' ') . ' FCFA', auth()->user()->boulangerie_id, 'paiement');
+
         return redirect()->route('livreurs.distributions', $livreur)->with('success', 'Versement corrigé.');
     }
 
@@ -140,6 +142,8 @@ class VersementController extends Controller
             // Le reliquat des distributions suit : l'argent revient « dû ».
             $livreur->recalculerReliquats();
         });
+
+        \App\Models\ActivityLog::record('versement_annule', auth()->user()->name . ' a annulé un versement de ' . number_format((float) $versement->montant_verse, 0, ',', ' ') . ' FCFA — ' . trim($livreur->prenom . ' ' . $livreur->nom), auth()->user()->boulangerie_id, 'paiement');
 
         return redirect()->back()->with('success', 'Versement annulé.');
     }

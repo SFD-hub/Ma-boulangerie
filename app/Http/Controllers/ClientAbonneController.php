@@ -102,6 +102,7 @@ class ClientAbonneController extends Controller
         // reçus sont des recettes du bilan. Il est simplement désactivé (réactivable depuis sa modification).
         if ($clientAbonne->consommations()->exists() || Facture::where('client_abonne_id', $clientAbonne->id)->exists()) {
             $clientAbonne->update(['actif' => false]);
+            \App\Models\ActivityLog::record('abonne_desactive', auth()->user()->name . ' a désactivé l\'abonné ' . $clientAbonne->nom, auth()->user()->boulangerie_id, 'consommation');
 
             return redirect()->route('clients-abonnes.index')
                 ->with('success', 'Abonné désactivé : son historique est conservé.');
@@ -280,6 +281,8 @@ class ClientAbonneController extends Controller
             'date_facture'     => now()->toDateString(),
             'statut'           => 'impayee',
         ]);
+
+        \App\Models\ActivityLog::record('facture_generee', auth()->user()->name . ' a généré la facture ' . str_pad($validated['mois'], 2, '0', STR_PAD_LEFT) . '/' . $validated['annee'] . ' — ' . $clientAbonne->nom . ' (' . number_format($montantTotal, 0, ',', ' ') . ' FCFA)', auth()->user()->boulangerie_id, 'vente');
 
         return redirect()->route('clients-abonnes.factures.historique', $clientAbonne)
             ->with('success', "Facture générée : {$quantiteTotale} pains × {$validated['prix_unitaire']} FCFA = " . number_format($montantTotal, 0, ',', ' ') . " FCFA");

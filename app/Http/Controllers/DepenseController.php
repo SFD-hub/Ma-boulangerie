@@ -294,6 +294,8 @@ class DepenseController extends Controller
 
         $depense->update($validated);
 
+        \App\Models\ActivityLog::record('depense_modifiee', auth()->user()->name . ' a modifié une dépense — ' . $depense->libelle . ' (' . number_format((float) $depense->montant, 0, ',', ' ') . ' FCFA)', auth()->user()->boulangerie_id, 'depense');
+
         return redirect()->route('depenses.index')
             ->with('success', 'Dépense modifiée.');
     }
@@ -308,6 +310,8 @@ class DepenseController extends Controller
         }
 
         $depense->delete();
+
+        \App\Models\ActivityLog::record('depense_supprimee', auth()->user()->name . ' a supprimé une dépense — ' . $depense->libelle . ' (' . number_format((float) $depense->montant, 0, ',', ' ') . ' FCFA)', auth()->user()->boulangerie_id, 'depense');
 
         return redirect()->route('depenses.index')
             ->with('success', 'Dépense supprimée.');
