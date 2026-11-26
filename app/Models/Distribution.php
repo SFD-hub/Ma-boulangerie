@@ -196,6 +196,9 @@ class Distribution extends Model
             'montant_attendu' => $montant,
             'reliquat'        => $montant,
         ]);
+
+        // Un surplus déjà versé par ce livreur peut avoir réglé une partie de ce montant : on recalcule.
+        $this->livreur?->recalculerReliquats();
     }
 
     // Invendus en sixièmes de pain (entier = 6, moitié = 3, tiers = 2) : des

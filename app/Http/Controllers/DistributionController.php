@@ -114,6 +114,8 @@ class DistributionController extends Controller
             'reliquat'          => $montantAttendu,
         ]);
 
+        $distribution->livreur->recalculerReliquats();
+
         return redirect()->route('distributions.show', $distribution)
             ->with('success', 'Distribution mise à jour avec succès.');
     }
@@ -121,13 +123,16 @@ class DistributionController extends Controller
     public function destroy(Distribution $distribution): RedirectResponse
     {
         $livreur = $distribution->livreur;
-        abort_if($livreur->boulangerie_id !== auth()->user()->boulangerie_id, 403);
+        abort_if($livreur?->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         // Le versement lié utilise onDelete('set null') : on le supprime explicitement
         // pour éviter un versement orphelin qui fausserait les totaux.
-        $distribution->versement()->delete();
-
-        $distribution->delete();
+        \Illuminate\Support\Facades\DB::transaction(function () use ($distribution, $livreur) {
+            $distribution->versement()->delete();
+            $distribution->delete();
+            // Un surplus versé pour cette distribution avait pu régler d'anciens reliquats : on recalcule.
+            $livreur->recalculerReliquats();
+        });
 
         return redirect()->route('livreurs.distributions', $livreur)
             ->with('success', 'Distribution supprimée.');

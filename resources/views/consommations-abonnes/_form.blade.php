@@ -69,7 +69,7 @@
             {{ isset($consommationAbonne) ? 'Mettre à jour' : 'Créer' }}
         </button>
         <a 
-            href="{{ isset($consommationAbonne) ? route('consommations-abonnes.show', $consommationAbonne) : route('consommations-abonnes.index') }}"
+            href="{{ isset($consommationAbonne) ? route('consommations-abonnes.show', $consommationAbonne) : route('clients-abonnes.index') }}"
             style="padding: 10px 16px; background: #f0f0f0; color: #172033; border: 1px solid #d9dee7; border-radius: 6px; cursor: pointer; text-align: center; text-decoration: none;"
         >
             Annuler

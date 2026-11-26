@@ -26,7 +26,9 @@ class FactureController extends Controller
         $boulangerie_id = auth()->user()->boulangerie_id;
         abort_if(!$facture->clientAbonne || $facture->clientAbonne->boulangerie_id !== $boulangerie_id, 403);
 
-        return view('factures.edit', compact('facture'));
+        $clients = \App\Models\ClientAbonne::where('boulangerie_id', $boulangerie_id)->orderBy('nom')->get();
+
+        return view('factures.edit', compact('facture', 'clients'));
     }
 
     public function update(Request $request, Facture $facture): RedirectResponse

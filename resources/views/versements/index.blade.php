@@ -5,9 +5,7 @@
 @section('header')
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h1>Versements</h1>
-        <a href="{{ route('versements.create') }}" style="padding: 10px 16px; background: #0f766e; color: white; border-radius: 6px; text-decoration: none; font-weight: 700;">
-            + Ajouter un versement
-        </a>
+        
     </div>
 @endsection
 
@@ -16,7 +14,7 @@
 
     @if ($versements->isEmpty())
         <p style="color: #667085; text-align: center; padding: 40px;">
-            Aucun versement trouvé. <a href="{{ route('versements.create') }}" style="color: #0f766e;">Créer un versement</a>
+            Aucun versement trouvé. 
         </p>
     @else
         <div style="overflow-x: auto;">
@@ -50,12 +48,7 @@
                                 >
                                     Voir
                                 </a>
-                                <a 
-                                    href="{{ route('versements.edit', $versement) }}"
-                                    style="color: #0f766e; text-decoration: none; margin-right: 12px;"
-                                >
-                                    Éditer
-                                </a>
+                                
                                 <form 
                                     method="POST" 
                                     action="{{ route('versements.destroy', $versement) }}"

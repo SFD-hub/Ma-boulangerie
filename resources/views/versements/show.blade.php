@@ -6,12 +6,7 @@
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <h1>Versement du {{ $versement->date_versement->format('d/m/Y') }}</h1>
         <div style="display: flex; gap: 12px;">
-            <a 
-                href="{{ route('versements.edit', $versement) }}"
-                style="padding: 10px 16px; background: #0f766e; color: white; border-radius: 6px; text-decoration: none; font-weight: 700;"
-            >
-                Éditer
-            </a>
+            
             <a 
                 href="{{ route('versements.index') }}"
                 style="padding: 10px 16px; background: #f0f0f0; color: #172033; border: 1px solid #d9dee7; border-radius: 6px; text-decoration: none; font-weight: 700;"
@@ -52,12 +47,7 @@
             <div style="background: #f0f5f4; padding: 16px; border-radius: 6px; border: 1px solid #d9dee7;">
                 <h3 style="margin: 0 0 16px; color: #172033; font-size: 14px; font-weight: 700; text-transform: uppercase;">Actions</h3>
                 
-                <a 
-                    href="{{ route('versements.edit', $versement) }}"
-                    style="display: block; padding: 10px 12px; margin-bottom: 8px; background: #0f766e; color: white; text-decoration: none; border-radius: 4px; text-align: center; font-weight: 700;"
-                >
-                    ✎ Éditer
-                </a>
+                
 
                 <form 
                     method="POST" 

@@ -367,33 +367,9 @@ class LivreurController extends Controller
                 'montant_verse'   => $montantVerse,
             ]);
 
-            // ── 4. Appliquer le surplus aux anciens reliquats (du + ancien au + récent) ─
-            // Le statut n'est pas modifié ici : il dépend uniquement de l'existence d'un versement.
-            if ($surplus > 0) {
-                $distribsAvecReliquat = Distribution::where('livreur_id', $livreur->id)
-                    ->where('id', '!=', $distribution->id)
-                    ->where('reliquat', '>', 0)
-                    ->orderBy('date_distribution', 'asc')
-                    ->orderBy('id', 'asc')
-                    ->lockForUpdate()
-                    ->get();
-
-                foreach ($distribsAvecReliquat as $ancienne) {
-                    if ($surplus <= 0) {
-                        break;
-                    }
-
-                    $applied     = min($surplus, (float) $ancienne->reliquat);
-                    $newReliquat = (float) $ancienne->reliquat - $applied;
-
-                    $ancienne->update([
-                        'reliquat' => $newReliquat,
-                        // statut inchangé : 'reglee' si versement, 'en_attente' sinon
-                    ]);
-
-                    $surplus -= $applied;
-                }
-            }
+            // ── 3. Reliquats : le surplus éventuel règle les plus anciens reliquats (du + ancien au + récent).
+            // Le recalcul est la seule règle utilisée partout (versement, retour, suppression).
+            $livreur->recalculerReliquats();
 
             return ['ok' => true];
         });

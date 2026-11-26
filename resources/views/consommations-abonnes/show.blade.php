@@ -13,7 +13,7 @@
                 Éditer
             </a>
             <a 
-                href="{{ route('consommations-abonnes.index') }}"
+                href="{{ route('clients-abonnes.show', $consommationAbonne->client_abonne_id) }}"
                 style="padding: 10px 16px; background: #f0f0f0; color: #172033; border: 1px solid #d9dee7; border-radius: 6px; text-decoration: none; font-weight: 700;"
             >
                 Retour

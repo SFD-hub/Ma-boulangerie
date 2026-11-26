@@ -101,4 +101,63 @@ class Livreur extends Model
             ? route('depot.index')
             : route('clients.index', ['type' => $this->type]);
     }
+
+    /**
+     * Recalcule les reliquats de toutes les distributions à partir des montants attendus et des
+     * versements, dans l'ordre où ils ont été saisis (comme à l'enregistrement : un versement règle
+     * sa distribution, puis son surplus règle les plus anciens reliquats). À utiliser après la
+     * suppression d'un versement ou d'une distribution.
+     *
+     * @param  bool  $simulation  true = ne rien enregistrer, retourner seulement [id => reliquat].
+     */
+    public function recalculerReliquats(bool $simulation = false): array
+    {
+        $distributions = $this->distributions()->orderBy('date_distribution')->orderBy('id')->get();
+        $reliquats = [];
+        foreach ($distributions as $d) {
+            $reliquats[$d->id] = (float) $d->montant_attendu;
+        }
+
+        $parDistribution = $this->versements()->orderBy('id')->get();
+        $aVersement = [];
+        foreach ($parDistribution as $v) {
+            $montant = (float) $v->montant_verse;
+            $cible = $v->distribution_id && isset($reliquats[$v->distribution_id]) ? $v->distribution_id : null;
+            $surplus = $montant;
+
+            if ($cible) {
+                $aVersement[$cible] = true;
+                $avant = $reliquats[$cible];
+                $reliquats[$cible] = max(0.0, $avant - $montant);
+                $surplus = max(0.0, $montant - $avant);
+            }
+
+            foreach ($distributions as $autre) {
+                if ($surplus <= 0) {
+                    break;
+                }
+                if ($autre->id === $cible || $reliquats[$autre->id] <= 0 || $autre->created_at > $v->created_at) {
+                    continue;
+                }
+                $applique = min($surplus, $reliquats[$autre->id]);
+                $reliquats[$autre->id] -= $applique;
+                $surplus -= $applique;
+            }
+        }
+
+        if (! $simulation) {
+            foreach ($distributions as $d) {
+                $nouveau = round($reliquats[$d->id], 2);
+                $donnees = ['reliquat' => $nouveau];
+                if (isset($aVersement[$d->id])) {
+                    $donnees['statut'] = $nouveau <= 0 ? 'reglee' : 'en_attente';
+                }
+                if ((float) $d->reliquat !== $nouveau || isset($donnees['statut']) && $d->statut !== $donnees['statut']) {
+                    $d->update($donnees);
+                }
+            }
+        }
+
+        return $reliquats;
+    }
 }

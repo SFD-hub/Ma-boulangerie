@@ -82,7 +82,7 @@ class ConsommationAbonneController extends Controller
             'consommation'
         );
 
-        return redirect()->route('consommations-abonnes.index')
+        return redirect()->route('clients-abonnes.show', $validated['client_abonne_id'])
             ->with('success', 'Consommation enregistrée avec succès.');
     }
 
