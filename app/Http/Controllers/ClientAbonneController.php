@@ -194,6 +194,11 @@ class ClientAbonneController extends Controller
 
     public function storeConso(Request $request, ClientAbonne $clientAbonne): RedirectResponse
     {
+        return \App\Models\Produit::sousVerrou(fn () => $this->storeConsoVerrouille($request, $clientAbonne));
+    }
+
+    private function storeConsoVerrouille(Request $request, ClientAbonne $clientAbonne): RedirectResponse
+    {
         abort_if($clientAbonne->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $validated = $request->validate([

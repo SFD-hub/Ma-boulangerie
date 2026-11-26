@@ -39,6 +39,11 @@ class ConsommationAbonneController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        return \App\Models\Produit::sousVerrou(fn () => $this->storeVerrouille($request));
+    }
+
+    private function storeVerrouille(Request $request): RedirectResponse
+    {
         $validated = $request->validate([
             'client_abonne_id' => 'required|exists:clients_abonnes,id',
             'date_consommation' => 'required|date',
@@ -112,6 +117,11 @@ class ConsommationAbonneController extends Controller
     }
 
     public function update(Request $request, ConsommationAbonne $consommationAbonne): RedirectResponse
+    {
+        return \App\Models\Produit::sousVerrou(fn () => $this->updateVerrouille($request, $consommationAbonne));
+    }
+
+    private function updateVerrouille(Request $request, ConsommationAbonne $consommationAbonne): RedirectResponse
     {
         $validated = $request->validate([
             'client_abonne_id' => 'required|exists:clients_abonnes,id',

@@ -73,6 +73,7 @@ class VersementController extends Controller
         $estPremier   = $distribution && (int) $distribution->versements()->value('id') === (int) $versement->id;
 
         $erreur = DB::transaction(function () use ($validated, $versement, $livreur, $distribution, $estPremier, $request) {
+            Livreur::where('id', $livreur->id)->lockForUpdate()->first();   // un seul recalcul des reliquats à la fois pour ce livreur
             // Restants corrigés (premier versement d'un livreur ou d'un client seulement).
             if ($estPremier && ! $livreur->estVendeur() && $request->has('entiers_invendus')) {
                 $entiers = (int) ($validated['entiers_invendus'] ?? 0);
@@ -123,6 +124,7 @@ class VersementController extends Controller
         $distribution = $versement->distribution_id ? Distribution::where('id', $versement->distribution_id)->first() : null;
 
         DB::transaction(function () use ($versement, $livreur, $distribution) {
+            Livreur::where('id', $livreur->id)->lockForUpdate()->first();   // un seul recalcul des reliquats à la fois pour ce livreur
             $versement->delete();
 
             // Plus aucun versement : la distribution redevient « en attente » (restants oubliés,

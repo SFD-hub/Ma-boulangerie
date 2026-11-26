@@ -232,24 +232,32 @@ class LivreurController extends Controller
         // production ce jour-là, ou plus rien de disponible = pas de distribution.
         $date = \Carbon\Carbon::parse($validated['date_distribution'])->toDateString();
 
-        $disponible = $produit->painsEntiersDisponibles(null, $date);
-
-        if ($validated['nombre_pains'] > $disponible) {
-            return redirect()->back()->withInput()->with('error', $produit->messageStockInsuffisant($date));
-        }
-
         $montantAttendu = $validated['nombre_pains'] * $validated['prix_pain'];
 
-        Distribution::create([
-            'livreur_id'        => $livreur->id,
-            'produit_id'        => $validated['produit_id'],
-            'date_distribution' => $validated['date_distribution'],
-            'nombre_pains'      => $validated['nombre_pains'],
-            'prix_pain'         => $validated['prix_pain'],
-            'montant_attendu'   => $montantAttendu,
-            'reliquat'          => $montantAttendu,
-            'statut'            => 'en_attente',
-        ]);
+        // Deux personnes peuvent attribuer au même instant : on verrouille ce pain le temps de
+        // vérifier ce qui reste et d'enregistrer, pour ne jamais dépasser la production du jour.
+        $refus = \App\Models\Produit::sousVerrou(fn () => DB::transaction(function () use ($produit, $date, $validated, $livreur, $montantAttendu) {
+            if ($validated['nombre_pains'] > $produit->painsEntiersDisponibles(null, $date)) {
+                return $produit->messageStockInsuffisant($date);
+            }
+
+            Distribution::create([
+                'livreur_id'        => $livreur->id,
+                'produit_id'        => $validated['produit_id'],
+                'date_distribution' => $validated['date_distribution'],
+                'nombre_pains'      => $validated['nombre_pains'],
+                'prix_pain'         => $validated['prix_pain'],
+                'montant_attendu'   => $montantAttendu,
+                'reliquat'          => $montantAttendu,
+                'statut'            => 'en_attente',
+            ]);
+
+            return null;
+        }));
+
+        if ($refus) {
+            return redirect()->back()->withInput()->with('error', $refus);
+        }
 
         \App\Models\ActivityLog::record('attribution_pains', auth()->user()->name . ' a attribué ' . $validated['nombre_pains'] . ' pains à ' . trim($livreur->prenom . ' ' . $livreur->nom) . ' (' . $livreur->nomRole() . ')', auth()->user()->boulangerie_id, 'vente');
 
@@ -294,6 +302,7 @@ class LivreurController extends Controller
             ?? 0;
 
         $resultat = DB::transaction(function () use ($validated, $distributionRef, $livreur, $prixPain, $entiersInvendus, $moitiesInvendus, $tiersInvendus, $invendusParts) {
+            Livreur::where('id', $livreur->id)->lockForUpdate()->first();   // un seul recalcul des reliquats à la fois pour ce livreur
             // Verrouille la distribution ciblée ET toutes les distributions du
             // livreur ayant un reliquat, avant toute lecture utilisée pour le
             // calcul — deux versements simultanés pour le même livreur ne

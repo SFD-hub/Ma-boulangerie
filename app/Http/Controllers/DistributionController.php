@@ -43,6 +43,11 @@ class DistributionController extends Controller
 
     public function update(Request $request, Distribution $distribution): RedirectResponse
     {
+        return \App\Models\Produit::sousVerrou(fn () => $this->updateVerrouille($request, $distribution));
+    }
+
+    private function updateVerrouille(Request $request, Distribution $distribution): RedirectResponse
+    {
         $boulangerie_id = auth()->user()->boulangerie_id;
         abort_if(!$distribution->livreur || $distribution->livreur->boulangerie_id !== $boulangerie_id, 403);
 
@@ -130,6 +135,7 @@ class DistributionController extends Controller
         // Le versement lié utilise onDelete('set null') : on le supprime explicitement
         // pour éviter un versement orphelin qui fausserait les totaux.
         \Illuminate\Support\Facades\DB::transaction(function () use ($distribution, $livreur) {
+            \App\Models\Livreur::where('id', $livreur->id)->lockForUpdate()->first();
             $distribution->versement()->delete();
             $distribution->delete();
             // Un surplus versé pour cette distribution avait pu régler d'anciens reliquats : on recalcule.

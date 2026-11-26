@@ -104,6 +104,11 @@ class RetourDistributionController extends Controller
     // deviendrait négatif).
     public function destroy(RetourDistribution $retourDistribution): RedirectResponse
     {
+        return \App\Models\Produit::sousVerrou(fn () => $this->destroyVerrouille($retourDistribution));
+    }
+
+    private function destroyVerrouille(RetourDistribution $retourDistribution): RedirectResponse
+    {
         abort_if($retourDistribution->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $livreur = $retourDistribution->livreur;

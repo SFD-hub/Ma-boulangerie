@@ -180,4 +180,24 @@ class Produit extends Model
             : 'Il ne reste que ' . $reste . ' pain' . ($reste > 1 ? 's' : '') . ' « ' . $this->nom . ' » ' . $quand
                 . ' (production du jour : ' . intdiv($produits, 6) . ').';
     }
+
+    /**
+     * Exécute $fn sous un verrou propre à la boulangerie : toutes les opérations qui consomment le pain
+     * du jour (attribution, modification de distribution, consommation d'abonné, production…) passent
+     * l'une après l'autre. Sans cela, deux personnes qui valident au même instant lisent le même
+     * « pain disponible » et dépassent toutes les deux la production.
+     */
+    public static function sousVerrou(\Closure $fn)
+    {
+        $nom = 'pain_boulangerie_' . (int) auth()->user()?->boulangerie_id;
+        $pris = (int) (\Illuminate\Support\Facades\DB::selectOne('SELECT GET_LOCK(?, 20) AS v', [$nom])->v ?? 0);
+
+        try {
+            return $fn();
+        } finally {
+            if ($pris === 1) {
+                \Illuminate\Support\Facades\DB::select('SELECT RELEASE_LOCK(?)', [$nom]);
+            }
+        }
+    }
 }

@@ -220,6 +220,11 @@ class ProductionController extends Controller
 
     public function update(Request $request, Production $production): RedirectResponse
     {
+        return \App\Models\Produit::sousVerrou(fn () => $this->updateVerrouille($request, $production));
+    }
+
+    private function updateVerrouille(Request $request, Production $production): RedirectResponse
+    {
         abort_if($production->boulangerie_id !== auth()->user()->boulangerie_id, 403);
 
         $validated = $request->validate([
@@ -395,6 +400,11 @@ class ProductionController extends Controller
     }
 
     public function destroy(Production $production): RedirectResponse
+    {
+        return \App\Models\Produit::sousVerrou(fn () => $this->destroyVerrouille($production));
+    }
+
+    private function destroyVerrouille(Production $production): RedirectResponse
     {
         $boulangerie_id = auth()->user()->boulangerie_id;
         abort_if($production->boulangerie_id !== $boulangerie_id, 403);
