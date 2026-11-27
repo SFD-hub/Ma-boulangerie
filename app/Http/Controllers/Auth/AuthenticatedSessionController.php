@@ -32,7 +32,12 @@ class AuthenticatedSessionController extends Controller
         $login = trim((string) $request->input('login'));
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'telephone';
         if ($field === 'telephone') {
-            $login = \App\Support\Telephone::normaliser($login);   // « 77 123 45 67 », « +221 77… » : même compte
+            // « 77 123 45 67 », « +221 77… » : même compte. Mais si un compte ancien a été enregistré tel quel
+            // (écriture d'origine conservée parce qu'un autre compte avait déjà le même numéro), l'écriture
+            // exacte tapée est prioritaire : on ne bascule jamais sur le compte de quelqu'un d'autre.
+            if (! User::where('telephone', $login)->exists()) {
+                $login = \App\Support\Telephone::normaliser($login);
+            }
         }
 
         $credentials = [
