@@ -7,7 +7,9 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -35,7 +37,25 @@ class AuthenticatedSessionController extends Controller
             'password' => $request->input('password'),
         ];
 
+        // Verrou par COMPTE (en plus de la limite par adresse IP, que l'on peut contourner en changeant
+        // d'adresse) : 8 échecs sur un même identifiant bloquent les essais pendant 15 minutes.
+        $cleLimite = 'connexion:' . sha1(mb_strtolower(trim((string) $login)));
+        if (RateLimiter::tooManyAttempts($cleLimite, 8)) {
+            $minutes = (int) ceil(RateLimiter::availableIn($cleLimite) / 60);
+
+            return back()
+                ->withErrors(['login' => 'Trop de tentatives sur ce compte. Réessayez dans ' . $minutes . ' minute' . ($minutes > 1 ? 's' : '') . '.'])
+                ->onlyInput('login');
+        }
+
+        // Un identifiant inconnu doit coûter autant de temps qu'un identifiant connu avec un mauvais
+        // mot de passe : sinon la durée de réponse révèle quels numéros ont un compte.
+        if (! User::where($field, $login)->exists()) {
+            Hash::make((string) $request->input('password'));
+        }
+
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::hit($cleLimite, 900);
             Log::warning('Échec de connexion', ['login' => $login, 'ip' => $request->ip()]);
 
             return back()
@@ -43,6 +63,7 @@ class AuthenticatedSessionController extends Controller
                 ->onlyInput('login');
         }
 
+        RateLimiter::clear($cleLimite);
         $request->session()->regenerate();
 
         $user = auth()->user();

@@ -34,7 +34,7 @@ class GerantController extends Controller
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
             'telephone' => 'required|string|max:20|unique:users,telephone',
-            'password'  => 'required|string|min:8|confirmed',
+            'password'  => ['required', 'string', 'confirmed', new \App\Rules\MotDePasseSolide()],
         ], [
             'name.required'      => 'Le nom est obligatoire.',
             'telephone.required' => 'Le numéro de téléphone est obligatoire.',
@@ -87,7 +87,7 @@ class GerantController extends Controller
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
             'telephone' => 'required|string|max:20|unique:users,telephone,' . $gerant->id,
-            'password'  => 'nullable|string|min:8|confirmed',
+            'password'  => ['nullable', 'string', 'confirmed', new \App\Rules\MotDePasseSolide()],
         ], [
             'name.required'      => 'Le nom est obligatoire.',
             'telephone.required' => 'Le numéro de téléphone est obligatoire.',

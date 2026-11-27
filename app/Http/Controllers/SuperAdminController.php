@@ -176,7 +176,7 @@ class SuperAdminController extends Controller
         abort_if($user->role?->nom === 'super_admin', 403);
 
         $request->validate([
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'string', 'confirmed', new \App\Rules\MotDePasseSolide()],
         ], [
             'password.required'  => 'Le mot de passe est obligatoire.',
             'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',

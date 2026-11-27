@@ -22,6 +22,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // (contenu mixte) une fois la page chargee en HTTPS.
         $middleware->trustProxies(at: '*');
 
+        // Le nom d'hôte reçu dans la requête n'est pas fiable : on n'accepte que celui de APP_URL (et ses
+        // sous-domaines), plus ceux listés dans TRUSTED_HOSTS (séparés par des virgules). Sans cela, un
+        // visiteur peut faire fabriquer au site de faux liens pointant vers un domaine qu'il contrôle.
+        // (Désactivé en développement local et pendant les tests automatiques, par Laravel.)
+        $middleware->trustHosts(
+            at: fn () => array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_HOSTS', ''))))),
+            subdomains: true,
+        );
+
         $middleware->alias([
             'role'  => EnsureUserHasRole::class,
             'setup' => EnsureBoulangerieSetup::class,

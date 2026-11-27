@@ -24,6 +24,22 @@ class SecurityHeaders
             "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'"
         );
 
+        // Caméra, micro, géolocalisation, paiement, capteurs : jamais utilisés par l'application.
+        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=()');
+        $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
+
+        // Ne pas annoncer la version de PHP.
+        $response->headers->remove('X-Powered-By');
+        if (! headers_sent()) {
+            header_remove('X-Powered-By');
+        }
+
+        // Pages connectées : jamais gardées en cache par le navigateur ni un intermédiaire. Après la
+        // déconnexion, le bouton « Retour » ne peut ainsi pas réafficher des chiffres de la boulangerie.
+        if ($request->user()) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            $response->headers->set('Pragma', 'no-cache');
+        }
         // Sans effet tant que le site n'est pas servi en HTTPS (les navigateurs
         // ignorent cet en-tête reçu en HTTP) — déjà prêt pour la mise en ligne.
         if ($request->secure()) {

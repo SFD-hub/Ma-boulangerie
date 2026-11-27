@@ -22,7 +22,7 @@ class RegisterController extends Controller
         $request->validate([
             'name'      => 'required|string|max:255',
             'telephone' => 'required|string|max:20|unique:users,telephone',
-            'password'  => 'required|string|min:8|confirmed',
+            'password'  => ['required', 'string', 'confirmed', new \App\Rules\MotDePasseSolide()],
         ], [
             'name.required'      => 'Le nom complet est obligatoire.',
             'telephone.required' => 'Le numéro de téléphone est obligatoire.',

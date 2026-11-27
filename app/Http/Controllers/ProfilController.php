@@ -22,7 +22,7 @@ class ProfilController extends Controller
         $validated = $request->validate([
             'name'             => 'required|string|max:255',
             'telephone'        => 'required|string|max:20|unique:users,telephone,' . $user->id,
-            'password'         => 'nullable|string|min:8|confirmed',
+            'password'         => ['nullable', 'string', 'confirmed', new \App\Rules\MotDePasseSolide()],
             'current_password' => ['required', 'current_password'],
         ], [
             'name.required'             => 'Le nom est obligatoire.',
