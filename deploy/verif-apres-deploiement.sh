@@ -28,15 +28,17 @@ verif "Permissions-Policy présent"                           'entetes $SITE/log
 verif "version de PHP non annoncée (pas de X-Powered-By)"    '! entetes $SITE/login | grep -qi "^x-powered-by:"'
 verif "version de nginx non annoncée"                        '! entetes $SITE/login | grep -qi "^server: *nginx/"'
 echo "== Cookies"
-verif "cookie de session : Secure"                           'entetes $SITE/login | grep -i "^set-cookie: *laravel-session" | grep -qi "secure"'
-verif "cookie de session : HttpOnly"                         'entetes $SITE/login | grep -i "^set-cookie: *laravel-session" | grep -qi "httponly"'
-verif "cookie de session : SameSite"                         'entetes $SITE/login | grep -i "^set-cookie: *laravel-session" | grep -qi "samesite"'
+verif "cookie de session : Secure"                           'entetes $SITE/login | grep -i "^set-cookie: *[^=]*session=" | grep -qi "secure"'
+verif "cookie de session : HttpOnly"                         'entetes $SITE/login | grep -i "^set-cookie: *[^=]*session=" | grep -qi "httponly"'
+verif "cookie de session : SameSite"                         'entetes $SITE/login | grep -i "^set-cookie: *[^=]*session=" | grep -qi "samesite"'
 echo "== Fichiers qui ne doivent jamais être servis"
 for f in .env .env.production storage/logs/laravel.log composer.json composer.lock artisan vendor/autoload.php .git/config database/seeders/DatabaseSeeder.php docker-compose.prod.yml deploy.sh; do
     verif "/$f non servi (403 ou 404)"                       'c=$(code $SITE/'"$f"'); [ "$c" = "403" ] || [ "$c" = "404" ]'
 done
 echo "== Protections de l'application"
-verif "un faux nom d'hôte est refusé (400)"                  '[ "$(code -H "Host: evil.example.com" $SITE/login)" = "400" ] || [ "$(code -H "X-Forwarded-Host: evil.example.com" $SITE/login)" = "400" ]'
+# Refusé = jamais servi : le routeur Traefik répond 404 avant même d'atteindre l'application (ou l'application répond 400 / 403).
+verif "un faux nom d'hôte n'est pas servi (400, 403 ou 404)"  'c=$(code -H "Host: evil.example.com" $SITE/login); [ "$c" = "400" ] || [ "$c" = "403" ] || [ "$c" = "404" ]'
+verif "un faux X-Forwarded-Host n'est pas pris en compte"   'c=$(code -H "X-Forwarded-Host: evil.example.com" $SITE/login); [ "$c" = "200" ] || [ "$c" = "400" ] || [ "$c" = "403" ]'
 verif "une écriture sans jeton CSRF est refusée (419)"       '[ "$(code -X POST -d login=x\&password=x $SITE/login)" = "419" ]'
 verif "une adresse démesurée est refusée (414)"              '[ "$(code "$SITE/login?q=$(head -c 9000 /dev/zero | tr "\0" a)")" = "414" ]'
 
