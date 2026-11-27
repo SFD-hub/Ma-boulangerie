@@ -38,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         // Plafond de taille : AVANT tout le reste (session comprise), sinon la session reçoit déjà la saisie géante.
         $middleware->prepend(LimiteTailleRequete::class);
+        // Changer ou réinitialiser un mot de passe coupe toutes les sessions ouvertes avec l'ancien (appareil perdu
+        // ou volé), y compris le cookie « se souvenir de moi ».
+        $middleware->authenticateSessions();
         $middleware->web(append: [SecurityHeaders::class, EviteDoublons::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

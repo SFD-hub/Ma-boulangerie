@@ -44,6 +44,11 @@ class ProfilController extends Controller
             'password'  => !empty($validated['password']) ? Hash::make($validated['password']) : $user->password,
         ]);
 
+        // Changement de mot de passe : les AUTRES appareils connectés sont déconnectés (celui-ci reste connecté).
+        if (! empty($validated['password'])) {
+            auth()->logoutOtherDevices($validated['password']);
+        }
+
         // Regénère la session par précaution après un changement d'identifiants.
         $request->session()->regenerate();
 
