@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureBoulangerieSetup;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\EviteDoublons;
+use App\Http\Middleware\LimiteTailleRequete;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -35,6 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'  => EnsureUserHasRole::class,
             'setup' => EnsureBoulangerieSetup::class,
         ]);
+        // Plafond de taille : AVANT tout le reste (session comprise), sinon la session reçoit déjà la saisie géante.
+        $middleware->prepend(LimiteTailleRequete::class);
         $middleware->web(append: [SecurityHeaders::class, EviteDoublons::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

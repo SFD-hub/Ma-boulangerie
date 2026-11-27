@@ -30,7 +30,7 @@ class ClientAbonneController extends Controller
     {
         $validated = $request->validate([
             'nom_complet' => 'required|string|max:255',
-            'telephone'   => 'required|string|max:20',
+            'telephone'   => ['required', 'string', 'max:20', 'regex:/^[0-9+().\s\-]{6,20}$/'],
             'adresse'     => 'nullable|string|max:255',
             'actif'       => 'sometimes|boolean',
         ], [
@@ -81,7 +81,7 @@ class ClientAbonneController extends Controller
         $validated = $request->validate([
             'nom'       => 'required|string|max:255',
             'prenom'    => 'required|string|max:255',
-            'telephone' => 'required|string|max:20',
+            'telephone' => ['required', 'string', 'max:20', 'regex:/^[0-9+().\s\-]{6,20}$/'],
             'adresse'   => 'nullable|string|max:255',
             'actif'     => 'sometimes|boolean',
         ]);

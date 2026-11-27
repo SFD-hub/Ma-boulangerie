@@ -65,14 +65,21 @@ class InventaireController extends Controller
         $comptes = (array) $request->input('compte', []);
         $note    = $request->input('note');
 
+        if (is_array($note) || mb_strlen((string) $note) > 255) {
+            return redirect()->route('inventaire.index')->with('error', 'La note est trop longue (255 caractères au maximum).');
+        }
+
         // Seuls les produits dont une quantité est saisie sont comptés.
         $saisies = [];
         foreach ($comptes as $id => $valeur) {
+            if (is_array($valeur)) {
+                return redirect()->route('inventaire.index')->with('error', 'Les quantités comptées doivent être des nombres positifs.');
+            }
             if ($valeur === null || trim((string) $valeur) === '') {
                 continue;
             }
-            if (! is_numeric($valeur) || (float) $valeur < 0) {
-                return redirect()->route('inventaire.index')->with('error', 'Les quantités comptées doivent être des nombres positifs.');
+            if (! is_numeric($valeur) || (float) $valeur < 0 || (float) $valeur > 999999.99) {
+                return redirect()->route('inventaire.index')->with('error', 'Les quantités comptées doivent être des nombres positifs, de 999 999 au maximum.');
             }
             $saisies[(int) $id] = (float) $valeur;
         }

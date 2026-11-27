@@ -34,7 +34,7 @@ class LivreurController extends Controller
     {
         $validated = $request->validate([
             'nom_complet' => 'required|string|max:255',
-            'telephone'   => 'required|string|max:20',
+            'telephone'   => ['required', 'string', 'max:20', 'regex:/^[0-9+().\s\-]{6,20}$/'],
             'type'        => 'required|in:livreur,client,vendeur',
         ], [
             'nom_complet.required' => 'Le nom est obligatoire.',
@@ -115,7 +115,7 @@ class LivreurController extends Controller
         $validated = $request->validate([
             'nom'       => 'required|string|max:255',
             'prenom'    => 'required|string|max:255',
-            'telephone' => 'required|string|max:20',
+            'telephone' => ['required', 'string', 'max:20', 'regex:/^[0-9+().\s\-]{6,20}$/'],
             // Un vendeur reste vendeur ; un livreur/client ne devient pas vendeur ici.
             'type'      => 'required|in:' . ($livreur->estVendeur() ? 'vendeur' : 'livreur,client'),
         ]);

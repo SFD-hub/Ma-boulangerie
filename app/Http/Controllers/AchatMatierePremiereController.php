@@ -88,7 +88,7 @@ class AchatMatierePremiereController extends Controller
         $validated = $request->validate([
             'matiere_premiere_id' => 'required|exists:matieres_premieres,id',
             'quantite'            => 'required|numeric|min:0.5|max:999999.99',
-            'montant'             => 'required|numeric|min:0.01',
+            'montant'             => 'required|numeric|min:0.01|max:99999999.99',
             'date_achat'          => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'matiere_premiere_id.required' => 'La matière première est obligatoire.',
@@ -117,11 +117,15 @@ class AchatMatierePremiereController extends Controller
 
         // Un achat augmente le stock (et sa valeur) et crée la dépense. Le stock déjà présent à
         // l'installation, lui, passe par « Stock initial » (module Stock), sans dépense.
-        DB::transaction(function () use ($validated, $matierePremiere, $boulangerie_id) {
+        $enregistre = DB::transaction(function () use ($validated, $matierePremiere, $boulangerie_id) {
             // Verrouille la ligne de stock pour éviter qu'un achat concurrent
             // (même matière première, même instant) ne lise la même valeur
             // et n'en écrase un des deux à l'enregistrement.
             $mp = MatierePremiere::where('id', $matierePremiere->id)->lockForUpdate()->firstOrFail();
+
+            if ((float) $mp->stock_actuel + (float) $validated['quantite'] > 999999.99) {
+                return false;
+            }
 
             $achat = AchatMatierePremiere::create($validated);
 
@@ -147,7 +151,14 @@ class AchatMatierePremiereController extends Controller
                 $boulangerie_id,
                 'achat'
             );
+
+            return true;
         });
+
+        if (! $enregistre) {
+            return redirect()->back()->withInput()
+                ->with('error', 'Quantité trop grande : le stock de ' . $matierePremiere->nom . ' ne peut pas dépasser 999 999.');
+        }
 
         // Achat saisi depuis la page d'un produit : on y reste. Sinon, retour au module Achats.
         $retour = $request->boolean('depuis_produit')
@@ -183,7 +194,7 @@ class AchatMatierePremiereController extends Controller
         $validated = $request->validate([
             'matiere_premiere_id' => 'required|exists:matieres_premieres,id',
             'quantite'            => 'required|numeric|min:0.5|max:999999.99',
-            'montant'             => 'required|numeric|min:0.01',
+            'montant'             => 'required|numeric|min:0.01|max:99999999.99',
             'date_achat'          => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'matiere_premiere_id.required' => 'La matière première est obligatoire.',
@@ -225,6 +236,10 @@ class AchatMatierePremiereController extends Controller
                 return false;
             }
 
+            if ($mp->stock_actuel + $diff > 999999.99) {
+                return 'plafond';
+            }
+
             // Baisser le prix d'un achat déjà consommé fausserait le coût des pains déjà produits.
             if ((float) $mp->valeur_stock + ((float) $validated['montant'] - (float) $achatMatierePremiere->montant) < -0.5) {
                 return 'prix';
@@ -255,6 +270,11 @@ class AchatMatierePremiereController extends Controller
 
             return true;
         });
+
+        if ($resultat === 'plafond') {
+            return redirect()->back()->withInput()
+                ->with('error', 'Quantité trop grande : le stock ne peut pas dépasser 999 999.');
+        }
 
         if ($resultat === 'prix') {
             return redirect()->back()->withInput()

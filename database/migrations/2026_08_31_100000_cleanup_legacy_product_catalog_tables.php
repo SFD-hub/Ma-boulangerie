@@ -32,6 +32,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('produits', function (Blueprint $table) {
+            // MySQL refuse de supprimer l'index unique tant que la clé étrangère n'a pas un autre index.
+            $table->index('boulangerie_id', 'produits_boulangerie_id_index_tmp');
+        });
+
+        Schema::table('produits', function (Blueprint $table) {
             $table->dropUnique(['boulangerie_id', 'nom']);
             $table->dropColumn('actif');
         });

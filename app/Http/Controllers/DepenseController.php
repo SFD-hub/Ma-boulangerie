@@ -217,7 +217,7 @@ class DepenseController extends Controller
         $validated = $request->validate([
             'libelle'     => 'required|string|min:3|max:255',
             'categorie'   => 'required|string|in:' . implode(',', array_keys(self::CATEGORIES_MANUELLES)),
-            'montant'     => 'required|numeric|min:0.01',
+            'montant'     => 'required|numeric|min:0.01|max:99999999.99',
             'date_depense'=> 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'libelle.required'      => 'Le motif de la dépense est obligatoire.',
@@ -282,7 +282,7 @@ class DepenseController extends Controller
         $validated = $request->validate([
             'libelle'      => 'required|string|min:3|max:255',
             'categorie'    => 'required|string|in:' . implode(',', array_keys($this->categoriesPour($depense))),
-            'montant'      => 'required|numeric|min:0.01',
+            'montant'      => 'required|numeric|min:0.01|max:99999999.99',
             'date_depense' => 'required|date|after_or_equal:2020-01-01|before_or_equal:today',
         ], [
             'libelle.required'             => 'Le motif de la dépense est obligatoire.',

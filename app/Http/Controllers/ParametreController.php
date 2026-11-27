@@ -25,7 +25,7 @@ class ParametreController extends Controller
 
         $validated = $request->validate([
             'nom'       => 'required|string|max:255',
-            'telephone' => 'nullable|string|max:20',
+            'telephone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+().\s\-]{6,20}$/'],
             'adresse'   => 'nullable|string|max:500',
             'prix_boutique_entier' => 'required|integer|min:1|max:100000',
             'prix_boutique_moitie' => 'required|integer|min:1|max:100000',

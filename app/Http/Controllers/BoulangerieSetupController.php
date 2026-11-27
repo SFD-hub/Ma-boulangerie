@@ -14,7 +14,7 @@ class BoulangerieSetupController extends Controller
 {
     private const RULES = [
         'nom'       => 'required|string|max:255',
-        'telephone' => 'required|string|max:20',
+        'telephone' => ['required', 'string', 'max:20', 'regex:/^[0-9+().\s\-]{6,20}$/'],
         'adresse'   => 'required|string|max:500',
         'email'     => 'nullable|string|email|max:255',
     ];

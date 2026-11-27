@@ -81,7 +81,7 @@ class ProductionController extends Controller
             'nombre_sacs' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_paquets_levure' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_paquets_produit' => 'nullable|numeric|min:0|max:999999.99',
-            'nombre_pains_produits' => 'required|integer|min:1',
+            'nombre_pains_produits' => 'required|integer|min:1|max:1000000',
         ], [
             'produit_id.required' => 'Le produit est obligatoire.',
             'date_production.required' => 'La date de production est obligatoire.',
@@ -233,7 +233,7 @@ class ProductionController extends Controller
             'nombre_sacs' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_paquets_levure' => 'required|numeric|min:0.5|max:999999.99',
             'nombre_paquets_produit' => 'nullable|numeric|min:0|max:999999.99',
-            'nombre_pains_produits' => 'required|integer|min:1',
+            'nombre_pains_produits' => 'required|integer|min:1|max:1000000',
         ], [
             'produit_id.required' => 'Le produit est obligatoire.',
             'date_production.required' => 'La date de production est obligatoire.',

@@ -29,8 +29,11 @@ class AuthenticatedSessionController extends Controller
             'password.required' => 'Le mot de passe est obligatoire.',
         ]);
 
-        $login = $request->input('login');
+        $login = trim((string) $request->input('login'));
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'telephone';
+        if ($field === 'telephone') {
+            $login = \App\Support\Telephone::normaliser($login);   // « 77 123 45 67 », « +221 77… » : même compte
+        }
 
         $credentials = [
             $field     => $login,

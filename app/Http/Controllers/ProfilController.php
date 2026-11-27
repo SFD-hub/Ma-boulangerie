@@ -19,15 +19,17 @@ class ProfilController extends Controller
     {
         $user = auth()->user();
 
+        $request->merge(['telephone' => \App\Support\Telephone::normaliser($request->input('telephone'))]);
         $validated = $request->validate([
             'name'             => 'required|string|max:255',
-            'telephone'        => 'required|string|max:20|unique:users,telephone,' . $user->id,
+            'telephone'        => ['required', 'string', 'max:20', 'regex:' . \App\Support\Telephone::REGLE, 'unique:users,telephone,' . $user->id],
             'password'         => ['nullable', 'string', 'confirmed', new \App\Rules\MotDePasseSolide()],
             'current_password' => ['required', 'current_password'],
         ], [
             'name.required'             => 'Le nom est obligatoire.',
             'telephone.required'        => 'Le numéro de téléphone est obligatoire.',
             'telephone.unique'          => 'Ce numéro de téléphone est déjà utilisé.',
+            'telephone.regex' => \App\Support\Telephone::MESSAGE,
             'password.min'              => 'Le mot de passe doit contenir au moins 8 caractères.',
             'password.confirmed'        => 'La confirmation du mot de passe ne correspond pas.',
             'current_password.required' => 'Votre mot de passe actuel est obligatoire pour confirmer ce changement.',

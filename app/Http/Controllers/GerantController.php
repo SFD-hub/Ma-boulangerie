@@ -31,14 +31,16 @@ class GerantController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['telephone' => \App\Support\Telephone::normaliser($request->input('telephone'))]);
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
-            'telephone' => 'required|string|max:20|unique:users,telephone',
+            'telephone' => ['required', 'string', 'max:20', 'regex:' . \App\Support\Telephone::REGLE, 'unique:users,telephone'],
             'password'  => ['required', 'string', 'confirmed', new \App\Rules\MotDePasseSolide()],
         ], [
             'name.required'      => 'Le nom est obligatoire.',
             'telephone.required' => 'Le numéro de téléphone est obligatoire.',
             'telephone.unique'   => 'Ce numéro de téléphone est déjà utilisé.',
+            'telephone.regex' => \App\Support\Telephone::MESSAGE,
             'password.required'  => 'Le mot de passe est obligatoire.',
             'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
             'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
@@ -84,14 +86,16 @@ class GerantController extends Controller
     {
         abort_if($gerant->boulangerie_id !== auth()->user()->boulangerie_id || $gerant->role?->nom !== 'gerant', 403);
 
+        $request->merge(['telephone' => \App\Support\Telephone::normaliser($request->input('telephone'))]);
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
-            'telephone' => 'required|string|max:20|unique:users,telephone,' . $gerant->id,
+            'telephone' => ['required', 'string', 'max:20', 'regex:' . \App\Support\Telephone::REGLE, 'unique:users,telephone,' . $gerant->id],
             'password'  => ['nullable', 'string', 'confirmed', new \App\Rules\MotDePasseSolide()],
         ], [
             'name.required'      => 'Le nom est obligatoire.',
             'telephone.required' => 'Le numéro de téléphone est obligatoire.',
             'telephone.unique'   => 'Ce numéro de téléphone est déjà utilisé.',
+            'telephone.regex' => \App\Support\Telephone::MESSAGE,
             'password.min'       => 'Le mot de passe doit contenir au moins 8 caractères.',
             'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
         ]);
